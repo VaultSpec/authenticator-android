@@ -3,8 +3,10 @@ package com.vaultspec.authenticator
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.WindowManager
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
@@ -28,10 +30,31 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         prefs.initDarkModeFlow()
         updateScreenshotPolicy()
-        enableEdgeToEdge()
 
         setContent {
             val isDarkMode by prefs.darkModeFlow.collectAsState()
+
+            LaunchedEffect(isDarkMode) {
+                enableEdgeToEdge(
+                    statusBarStyle = if (isDarkMode) {
+                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(
+                            android.graphics.Color.TRANSPARENT,
+                            android.graphics.Color.TRANSPARENT,
+                        )
+                    },
+                    navigationBarStyle = if (isDarkMode) {
+                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
+                    } else {
+                        SystemBarStyle.light(
+                            android.graphics.Color.TRANSPARENT,
+                            android.graphics.Color.TRANSPARENT,
+                        )
+                    },
+                )
+            }
+
             VaultSpecTheme(darkTheme = isDarkMode) {
                 NavGraph(vaultRepository = vaultRepository)
             }

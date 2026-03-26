@@ -32,7 +32,10 @@ data class SettingsUiState(
     val confirmNewPassword: String = "",
     // Backup
     val backupPassword: String = "",
-    val showBackupDialog: Boolean = false,
+    val showBackupPasswordDialog: Boolean = false,
+    val backupFolderUri: String? = null,
+    val autoBackupEnabled: Boolean = false,
+    val hasBackupPassword: Boolean = false,
     // Restore
     val showRestoreDialog: Boolean = false,
     val restoreFileUri: Uri? = null,
@@ -66,6 +69,9 @@ class SettingsViewModel @Inject constructor(
         passwordReminderDays = prefs.passwordReminderDays,
         darkMode = prefs.darkMode,
         sessionTimeoutSeconds = prefs.sessionTimeoutSeconds,
+        backupFolderUri = prefs.backupFolderUri,
+        autoBackupEnabled = prefs.autoBackupEnabled,
+        hasBackupPassword = prefs.backupPassword != null,
     ))
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
 
@@ -168,39 +174,80 @@ class SettingsViewModel @Inject constructor(
     }
 
     // --- Backup ---
-    fun onShowBackupDialog() {
-        _state.value = _state.value.copy(showBackupDialog = true, backupPassword = "", error = null)
+    fun onShowBackupPasswordDialog() {
+        _state.value = _state.value.copy(showBackupPasswordDialog = true, backupPassword = "", error = null)
     }
 
-    fun onDismissBackupDialog() {
-        _state.value = _state.value.copy(showBackupDialog = false)
+    fun onDismissBackupPasswordDialog() {
+        _state.value = _state.value.copy(showBackupPasswordDialog = false)
     }
 
     fun onBackupPasswordChange(value: String) {
         _state.value = _state.value.copy(backupPassword = value, error = null)
     }
 
-    fun onBackup(context: android.content.Context, folderUri: Uri) {
+    fun onSaveBackupPassword() {
         val s = _state.value
         if (s.backupPassword.length < 6) {
             _state.value = s.copy(error = "Password must be at least 6 characters")
             return
         }
+        prefs.backupPassword = s.backupPassword
+        _state.value = s.copy(
+            showBackupPasswordDialog = false,
+            hasBackupPassword = true,
+            message = "Backup password saved",
+        )
+    }
+
+    fun onBackupFolderSelected(uri: Uri) {
+        prefs.backupFolderUri = uri.toString()
+        _state.value = _state.value.copy(
+            backupFolderUri = uri.toString(),
+            message = "Backup folder selected",
+        )
+    }
+
+    fun onAutoBackupToggle(enabled: Boolean) {
+        if (enabled) {
+            if (prefs.backupFolderUri == null) {
+                _state.value = _state.value.copy(message = "Please select a backup folder first")
+                return
+            }
+            if (prefs.backupPassword == null) {
+                _state.value = _state.value.copy(message = "Please set a backup password first")
+                return
+            }
+        }
+        prefs.autoBackupEnabled = enabled
+        _state.value = _state.value.copy(autoBackupEnabled = enabled)
+    }
+
+    fun onManualBackup(context: android.content.Context) {
+        val folderUriStr = prefs.backupFolderUri
+        if (folderUriStr == null) {
+            _state.value = _state.value.copy(message = "Please select a backup folder first")
+            return
+        }
+        val password = prefs.backupPassword
+        if (password == null) {
+            _state.value = _state.value.copy(message = "Please set a backup password first")
+            return
+        }
         val masterKey = vaultRepository.masterKey
         if (masterKey == null) {
-            _state.value = s.copy(error = "Vault is locked")
+            _state.value = _state.value.copy(message = "Vault is locked")
             return
         }
 
-        _state.value = s.copy(isLoading = true, error = null)
+        _state.value = _state.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
             try {
                 val filename = withContext(Dispatchers.IO) {
-                    backupManager.createBackup(context, folderUri, s.backupPassword, masterKey)
+                    backupManager.createBackup(context, Uri.parse(folderUriStr), password, masterKey)
                 }
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    showBackupDialog = false,
                     message = "Backup saved: $filename",
                 )
             } catch (e: CancellationException) {
@@ -208,7 +255,7 @@ class SettingsViewModel @Inject constructor(
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = "Backup failed: ${e.message}"
+                    message = "Backup failed: ${e.message}"
                 )
             }
         }

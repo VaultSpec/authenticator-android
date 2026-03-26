@@ -26,7 +26,12 @@ captures/
 # Key stores — never commit signing keys
 *.jks
 *.keystore
+keystore/
 keystore.properties
+
+# Play Store assets
+playstore_*.png
+ss.png
 
 # OS junk
 .DS_Store

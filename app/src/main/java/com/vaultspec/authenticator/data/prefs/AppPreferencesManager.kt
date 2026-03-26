@@ -75,6 +75,21 @@ class AppPreferencesManager @Inject constructor(
         get() = prefs.getLong(KEY_LAST_BACKGROUND, 0L)
         set(value) = prefs.edit().putLong(KEY_LAST_BACKGROUND, value).apply()
 
+    var backupFolderUri: String?
+        get() = prefs.getString(KEY_BACKUP_FOLDER_URI, null)
+        set(value) { prefs.edit().putString(KEY_BACKUP_FOLDER_URI, value).apply() }
+
+    var autoBackupEnabled: Boolean
+        get() = prefs.getBoolean(KEY_AUTO_BACKUP, false)
+        set(value) = prefs.edit().putBoolean(KEY_AUTO_BACKUP, value).apply()
+
+    var backupPassword: String?
+        get() = prefs.getString(KEY_BACKUP_PASSWORD, null)
+        set(value) {
+            if (value != null) prefs.edit().putString(KEY_BACKUP_PASSWORD, value).apply()
+            else prefs.edit().remove(KEY_BACKUP_PASSWORD).apply()
+        }
+
     companion object {
         private const val KEY_ALLOW_SCREENSHOTS = "allow_screenshots"
         private const val KEY_TAP_TO_REVEAL = "tap_to_reveal"
@@ -86,5 +101,8 @@ class AppPreferencesManager @Inject constructor(
         private const val KEY_DARK_MODE = "dark_mode"
         private const val KEY_SESSION_TIMEOUT = "session_timeout_seconds"
         private const val KEY_LAST_BACKGROUND = "last_background_timestamp"
+        private const val KEY_BACKUP_FOLDER_URI = "backup_folder_uri"
+        private const val KEY_AUTO_BACKUP = "auto_backup_enabled"
+        private const val KEY_BACKUP_PASSWORD = "backup_password"
     }
 }

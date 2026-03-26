@@ -1,6 +1,7 @@
 package com.vaultspec.authenticator.ui.screen.settings
 
 import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricManager
@@ -34,8 +35,8 @@ fun SettingsScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // SAF folder picker for backup
-    val folderPickerLauncher = rememberLauncherForActivityResult(
+    // SAF folder picker for backup folder selection
+    val backupFolderPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri ->
         uri?.let {
@@ -43,7 +44,7 @@ fun SettingsScreen(
                 it,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
-            viewModel.onBackup(context, it)
+            viewModel.onBackupFolderSelected(it)
         }
     }
 
@@ -129,10 +130,32 @@ fun SettingsScreen(
             SectionHeader("Backup & Restore")
 
             SettingsItem(
+                icon = Icons.Default.Folder,
+                title = "Backup Folder",
+                subtitle = if (state.backupFolderUri != null) "Folder selected \u2713" else "Tap to select backup folder",
+                onClick = { backupFolderPickerLauncher.launch(null) },
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Lock,
+                title = "Backup Password",
+                subtitle = if (state.hasBackupPassword) "Password set \u2713" else "Tap to set backup password",
+                onClick = viewModel::onShowBackupPasswordDialog,
+            )
+
+            SettingsItem(
                 icon = Icons.Default.Backup,
-                title = "Create Backup",
-                subtitle = "Export encrypted backup to a folder",
-                onClick = viewModel::onShowBackupDialog,
+                title = "Backup Now",
+                subtitle = "Save encrypted backup to selected folder",
+                onClick = { viewModel.onManualBackup(context) },
+            )
+
+            SettingsToggleItem(
+                icon = Icons.Default.Sync,
+                title = "Auto-backup",
+                subtitle = "Automatically backup when tokens change",
+                checked = state.autoBackupEnabled,
+                onCheckedChange = viewModel::onAutoBackupToggle,
             )
 
             SettingsItem(
@@ -215,8 +238,18 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Default.Info,
                 title = "VaultSpec Authenticator",
-                subtitle = "Version 1.0.0 — Local encrypted TOTP vault",
+                subtitle = "Version 1.1.0 — Local encrypted TOTP vault",
                 onClick = {},
+            )
+
+            SettingsItem(
+                icon = Icons.Default.Policy,
+                title = "Privacy Policy",
+                subtitle = "View our privacy policy",
+                onClick = {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.vaultspec.in/privacy"))
+                    context.startActivity(intent)
+                },
             )
         }
     }
@@ -258,15 +291,15 @@ fun SettingsScreen(
         )
     }
 
-    // Backup Dialog
-    if (state.showBackupDialog) {
+    // Backup Password Dialog
+    if (state.showBackupPasswordDialog) {
         AlertDialog(
-            onDismissRequest = viewModel::onDismissBackupDialog,
-            title = { Text("Create Encrypted Backup") },
+            onDismissRequest = viewModel::onDismissBackupPasswordDialog,
+            title = { Text("Set Backup Password") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
-                        "Enter a password to encrypt the backup. You'll need this password to restore.",
+                        "This password will be used to encrypt your backups. You'll need it to restore.",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     OutlinedTextField(
@@ -283,19 +316,10 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = { folderPickerLauncher.launch(null) },
-                    enabled = !state.isLoading,
-                ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                    } else {
-                        Text("Select Folder & Backup")
-                    }
-                }
+                Button(onClick = viewModel::onSaveBackupPassword) { Text("Save") }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::onDismissBackupDialog) { Text("Cancel") }
+                TextButton(onClick = viewModel::onDismissBackupPasswordDialog) { Text("Cancel") }
             },
         )
     }

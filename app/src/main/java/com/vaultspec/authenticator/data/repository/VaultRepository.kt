@@ -50,7 +50,11 @@ class VaultRepository @Inject constructor(
     }
 
     fun lock() {
-        _state.value = VaultState.Locked
+        if (masterKeyManager.isVaultSetUp(context)) {
+            _state.value = VaultState.Locked
+        } else {
+            _state.value = VaultState.NeedsSetup
+        }
     }
 
     fun isBiometricEnabled(): Boolean {

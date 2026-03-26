@@ -3,6 +3,7 @@ package com.vaultspec.authenticator.ui.screen.home
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,6 +26,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaultspec.authenticator.data.db.entity.TokenEntry
 import com.vaultspec.authenticator.ui.component.CategoryTabs
 import com.vaultspec.authenticator.ui.component.SearchBar
+import com.vaultspec.authenticator.R
 import com.vaultspec.authenticator.ui.component.TokenCard
 
 @Composable
@@ -215,13 +218,12 @@ private fun HeaderSection(
             modifier = Modifier
                 .size(48.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                .background(MaterialTheme.colorScheme.primary)
         ) {
-            Icon(
-                imageVector = Icons.Default.Person,
+            Image(
+                painter = painterResource(R.drawable.ic_launcher_foreground),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier.size(32.dp),
             )
         }
 

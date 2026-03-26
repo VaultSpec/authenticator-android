@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaultspec.authenticator.backup.BackupManager
 import com.vaultspec.authenticator.data.db.CategoryDao
 import com.vaultspec.authenticator.data.db.entity.TokenEntry
 import com.vaultspec.authenticator.data.prefs.AppPreferencesManager
@@ -45,6 +46,7 @@ class HomeViewModel @Inject constructor(
     private val vaultRepository: VaultRepository,
     private val categoryDao: CategoryDao,
     private val prefs: AppPreferencesManager,
+    private val backupManager: BackupManager,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -133,6 +135,7 @@ class HomeViewModel @Inject constructor(
     fun onDeleteToken(entry: TokenEntry) {
         viewModelScope.launch {
             tokenRepository.deleteToken(entry)
+            backupManager.triggerAutoBackupIfEnabled(appContext)
         }
     }
 

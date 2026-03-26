@@ -11,7 +11,9 @@ import com.vaultspec.authenticator.data.db.entity.TokenEntry
 import com.vaultspec.authenticator.data.model.BackupParams
 import com.vaultspec.authenticator.data.model.BackupPayload
 import com.vaultspec.authenticator.data.model.BackupTokenEntry
+import com.vaultspec.authenticator.data.prefs.AppPreferencesManager
 import com.vaultspec.authenticator.data.repository.TokenRepository
+import com.vaultspec.authenticator.data.repository.VaultRepository
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -22,6 +24,8 @@ import javax.inject.Singleton
 @Singleton
 class BackupManager @Inject constructor(
     private val tokenRepository: TokenRepository,
+    private val prefs: AppPreferencesManager,
+    private val vaultRepository: VaultRepository,
 ) {
 
     private val gson = Gson()
@@ -95,6 +99,18 @@ class BackupManager @Inject constructor(
         } ?: throw IllegalStateException("Cannot write to backup file")
 
         return filename
+    }
+
+    suspend fun triggerAutoBackupIfEnabled(context: Context) {
+        if (!prefs.autoBackupEnabled) return
+        val folderUriStr = prefs.backupFolderUri ?: return
+        val password = prefs.backupPassword ?: return
+        val masterKey = vaultRepository.masterKey ?: return
+        try {
+            createBackup(context, Uri.parse(folderUriStr), password, masterKey)
+        } catch (_: Exception) {
+            // Silent failure for auto-backup
+        }
     }
 
     companion object {
