@@ -7,9 +7,11 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.fragment.app.FragmentActivity
+import com.vaultspec.authenticator.data.model.VaultState
 import com.vaultspec.authenticator.data.prefs.AppPreferencesManager
 import com.vaultspec.authenticator.data.repository.VaultRepository
 import com.vaultspec.authenticator.ui.navigation.NavGraph
@@ -27,12 +29,34 @@ class MainActivity : FragmentActivity() {
     lateinit var prefs: AppPreferencesManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Set window background early to prevent white flash in dark mode
+        val isDarkAtLaunch = prefs.darkMode
+        val isPitchBlackAtLaunch = prefs.pitchBlack
+        if (isDarkAtLaunch) {
+            window.decorView.setBackgroundColor(
+                if (isPitchBlackAtLaunch) android.graphics.Color.BLACK
+                else android.graphics.Color.parseColor("#121212")
+            )
+        }
+
         super.onCreate(savedInstanceState)
         prefs.initDarkModeFlow()
         updateScreenshotPolicy()
 
         setContent {
             val isDarkMode by prefs.darkModeFlow.collectAsState()
+            val isPitchBlack by prefs.pitchBlackFlow.collectAsState()
+
+            // Keep window background in sync with theme to prevent white flash
+            SideEffect {
+                window.decorView.setBackgroundColor(
+                    when {
+                        isDarkMode && isPitchBlack -> android.graphics.Color.BLACK
+                        isDarkMode -> android.graphics.Color.parseColor("#121212")
+                        else -> android.graphics.Color.parseColor("#F5F7FA")
+                    }
+                )
+            }
 
             LaunchedEffect(isDarkMode) {
                 enableEdgeToEdge(
@@ -55,7 +79,7 @@ class MainActivity : FragmentActivity() {
                 )
             }
 
-            VaultSpecTheme(darkTheme = isDarkMode) {
+            VaultSpecTheme(darkTheme = isDarkMode, pitchBlack = isPitchBlack) {
                 NavGraph(vaultRepository = vaultRepository)
             }
         }
@@ -64,6 +88,19 @@ class MainActivity : FragmentActivity() {
     override fun onResume() {
         super.onResume()
         updateScreenshotPolicy()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // If session timeout is "Immediately", lock the vault when paused (including recents)
+        if (prefs.sessionTimeoutSeconds == 0 && vaultRepository.state.value is VaultState.Unlocked) {
+            vaultRepository.lock()
+            // Temporarily set FLAG_SECURE to blank the recents thumbnail
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE,
+            )
+        }
     }
 
     override fun onStop() {

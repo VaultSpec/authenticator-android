@@ -56,6 +56,9 @@ class AppPreferencesManager @Inject constructor(
     private val _darkModeFlow = MutableStateFlow(false)
     val darkModeFlow: StateFlow<Boolean> = _darkModeFlow.asStateFlow()
 
+    private val _pitchBlackFlow = MutableStateFlow(false)
+    val pitchBlackFlow: StateFlow<Boolean> = _pitchBlackFlow.asStateFlow()
+
     var darkMode: Boolean
         get() = prefs.getBoolean(KEY_DARK_MODE, false)
         set(value) {
@@ -63,8 +66,16 @@ class AppPreferencesManager @Inject constructor(
             _darkModeFlow.value = value
         }
 
+    var pitchBlack: Boolean
+        get() = prefs.getBoolean(KEY_PITCH_BLACK, false)
+        set(value) {
+            prefs.edit().putBoolean(KEY_PITCH_BLACK, value).apply()
+            _pitchBlackFlow.value = value
+        }
+
     fun initDarkModeFlow() {
         _darkModeFlow.value = darkMode
+        _pitchBlackFlow.value = pitchBlack
     }
 
     var sessionTimeoutSeconds: Int
@@ -99,6 +110,7 @@ class AppPreferencesManager @Inject constructor(
         private const val KEY_PASSWORD_REMINDER_DAYS = "password_reminder_days"
         private const val KEY_LAST_PASSWORD_AUTH = "last_password_auth_timestamp"
         private const val KEY_DARK_MODE = "dark_mode"
+        private const val KEY_PITCH_BLACK = "pitch_black"
         private const val KEY_SESSION_TIMEOUT = "session_timeout_seconds"
         private const val KEY_LAST_BACKGROUND = "last_background_timestamp"
         private const val KEY_BACKUP_FOLDER_URI = "backup_folder_uri"

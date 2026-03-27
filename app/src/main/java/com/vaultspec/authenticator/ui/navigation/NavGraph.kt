@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -26,10 +27,33 @@ fun NavGraph(
 ) {
     val vaultState by vaultRepository.state.collectAsState()
 
-    val startDestination = when (vaultState) {
-        is VaultState.NeedsSetup -> Routes.SETUP
-        is VaultState.Locked -> Routes.UNLOCK
-        is VaultState.Unlocked -> Routes.HOME
+    // Compute startDestination only once to prevent NavHost from rebuilding
+    // mid-operation (e.g., during restore or biometric enrollment in setup).
+    val startDestination = remember {
+        when (vaultRepository.state.value) {
+            is VaultState.NeedsSetup -> Routes.SETUP
+            is VaultState.Locked -> Routes.UNLOCK
+            is VaultState.Unlocked -> Routes.HOME
+        }
+    }
+
+    // React to vault lock: navigate to unlock/setup when vault state changes
+    LaunchedEffect(vaultState) {
+        when (vaultState) {
+            is VaultState.Locked -> {
+                navController.navigate(Routes.UNLOCK) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+            is VaultState.NeedsSetup -> {
+                navController.navigate(Routes.SETUP) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+            is VaultState.Unlocked -> {
+                // Don't auto-navigate to HOME — let screens handle it explicitly
+            }
+        }
     }
 
     NavHost(

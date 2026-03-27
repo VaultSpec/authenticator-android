@@ -43,3 +43,15 @@ val DarkRingBackground = Color(0xFF3A3A3A)
 
 val DarkCategorySelected = Color(0xFF8AB4F8)
 val DarkCategoryUnselected = Color(0xFF2C2C2C)
+
+// ── Pitch Black (AMOLED) palette ──
+val PitchBlackBackground = Color(0xFF000000)
+val PitchBlackSurface = Color(0xFF0A0A0A)
+val PitchBlackSurfaceVariant = Color(0xFF1A1A1A)
+val PitchBlackGrayLight = Color(0xFF2A2A2A)
+
+val PitchBlackCardWhite = Color(0xFF0A0A0A)
+
+val PitchBlackRingBackground = Color(0xFF2A2A2A)
+
+val PitchBlackCategoryUnselected = Color(0xFF1A1A1A)

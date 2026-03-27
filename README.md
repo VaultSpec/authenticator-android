@@ -35,18 +35,25 @@ A free, open-source TOTP authenticator for Android with an encrypted vault, biom
 - Android Studio Hedgehog or newer
 - JDK 17
 
-## Build
+## Disclaimer
 
-```bash
-# Clone
-git clone git@github.com:VaultSpec/authenticator-android.git
-cd authenticator-android
-
-# Debug APK
-./gradlew assembleDebug
-
-# APK at: app/build/outputs/apk/debug/app-debug.apk
-```
+> **Only download VaultSpec Authenticator from verified sources:**
+>
+> - [GitHub Releases](https://github.com/VaultSpec/authenticator-android/releases)
+> - Google Play Store *(under process)*
+>
+> You can verify the authenticity of the APK using `apksigner`:
+>
+> ```bash
+> # Verify the APK signature
+> apksigner verify --verbose --print-certs VaultSpec-v*.apk
+>
+> # Expected signer: look for the VaultSpec certificate fingerprint
+> # The output should show "Verified using v2 scheme" (or v3/v4)
+> # and no warnings about unsigned entries.
+> ```
+>
+> **Do not install APKs obtained from unofficial sources.** Tampered builds may compromise your 2FA secrets.
 
 ## Tech Stack
 

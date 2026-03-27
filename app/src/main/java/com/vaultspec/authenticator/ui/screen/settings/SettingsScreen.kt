@@ -178,6 +178,15 @@ fun SettingsScreen(
                 onCheckedChange = viewModel::onDarkModeToggle,
             )
 
+            SettingsToggleItem(
+                icon = Icons.Default.Contrast,
+                title = "Pitch Black",
+                subtitle = "AMOLED-friendly pure black theme",
+                checked = state.pitchBlack,
+                onCheckedChange = viewModel::onPitchBlackToggle,
+                enabled = state.darkMode,
+            )
+
             HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
 
             // Behavior section
@@ -485,7 +494,19 @@ private fun SettingsToggleItem(
                         else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
                 )
             }
-            Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                enabled = enabled,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    checkedBorderColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    uncheckedBorderColor = MaterialTheme.colorScheme.outline,
+                ),
+            )
         }
     }
 }

@@ -89,13 +89,51 @@ private val DarkExtraColors = VaultSpecExtraColors(
     categoryUnselected = DarkCategoryUnselected,
 )
 
+private val PitchBlackColorScheme = darkColorScheme(
+    primary = Blue400,
+    onPrimary = Color(0xFF003258),
+    primaryContainer = Blue600,
+    onPrimaryContainer = Blue100,
+    secondary = DarkCategorySelected,
+    onSecondary = Color(0xFF003258),
+    secondaryContainer = PitchBlackSurfaceVariant,
+    onSecondaryContainer = DarkTextPrimary,
+    surface = PitchBlackSurface,
+    onSurface = DarkTextPrimary,
+    surfaceVariant = PitchBlackSurfaceVariant,
+    onSurfaceVariant = DarkTextSecondary,
+    background = PitchBlackBackground,
+    onBackground = DarkTextPrimary,
+    outline = PitchBlackGrayLight,
+    outlineVariant = PitchBlackGrayLight,
+)
+
+private val PitchBlackExtraColors = VaultSpecExtraColors(
+    cardBlue = Blue500,
+    cardWhite = PitchBlackCardWhite,
+    textOnBlue = TextOnBlue,
+    ringBackground = PitchBlackRingBackground,
+    ringProgress = Blue400,
+    categorySelected = DarkCategorySelected,
+    categoryUnselected = PitchBlackCategoryUnselected,
+)
+
 @Composable
 fun VaultSpecTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    pitchBlack: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    val extraColors = if (darkTheme) DarkExtraColors else LightExtraColors
+    val colorScheme = when {
+        darkTheme && pitchBlack -> PitchBlackColorScheme
+        darkTheme -> DarkColorScheme
+        else -> LightColorScheme
+    }
+    val extraColors = when {
+        darkTheme && pitchBlack -> PitchBlackExtraColors
+        darkTheme -> DarkExtraColors
+        else -> LightExtraColors
+    }
 
     CompositionLocalProvider(LocalVaultSpecColors provides extraColors) {
         MaterialTheme(

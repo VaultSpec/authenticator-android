@@ -186,21 +186,36 @@ class SetupViewModel @Inject constructor(
         _state.value = s.copy(isLoading = true, restoreError = null)
         viewModelScope.launch {
             try {
-                withContext(Dispatchers.IO) {
-                    // 1. Setup vault with new password
+                val count = withContext(Dispatchers.IO) {
+                    // 1. Setup vault with new password (also unlocks vault)
                     vaultRepository.setupVault(s.restoreNewPassword)
 
                     // 2. Restore backup entries
-                    val count = restoreManager.restoreBackup(
+                    restoreManager.restoreBackup(
                         context = context,
                         fileUri = fileUri,
                         password = s.restorePassword,
                         replace = true,
                     )
-                    count
-                }.let { count ->
+                }
+
+                if (s.restoreEnableBiometric) {
+                    // Start biometric enrollment for restore flow
+                    val cipher = withContext(Dispatchers.IO) {
+                        vaultRepository.prepareBiometricEnrollment()
+                    }
                     _state.value = _state.value.copy(
                         isLoading = false,
+                        showRestoreDialog = false,
+                        restoreSuccess = true,
+                        restoredCount = count,
+                        showBiometricPrompt = true,
+                        biometricEnrollCipher = cipher,
+                    )
+                } else {
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        showRestoreDialog = false,
                         restoreSuccess = true,
                         restoredCount = count,
                         isSetupComplete = true,
