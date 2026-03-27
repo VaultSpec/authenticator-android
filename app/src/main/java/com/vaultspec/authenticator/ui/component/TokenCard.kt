@@ -12,7 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -107,7 +107,7 @@ fun TokenCard(
 
                 IconButton(onClick = { copyToClipboard(context, code) }) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                        imageVector = Icons.Filled.ContentCopy,
                         contentDescription = "Copy code",
                         tint = iconTint,
                         modifier = Modifier.size(20.dp),

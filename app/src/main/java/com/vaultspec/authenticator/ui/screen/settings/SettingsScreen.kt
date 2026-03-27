@@ -195,7 +195,7 @@ fun SettingsScreen(
             SettingsToggleItem(
                 icon = Icons.Default.Screenshot,
                 title = "Allow Screenshots",
-                subtitle = "Allow capturing screenshots of the app",
+                subtitle = "Allow capturing screenshots of the app. Requires the app to be re-opened",
                 checked = state.allowScreenshots,
                 onCheckedChange = viewModel::onAllowScreenshotsToggle,
             )
