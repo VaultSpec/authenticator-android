@@ -29,6 +29,8 @@ class MainActivity : FragmentActivity() {
     lateinit var prefs: AppPreferencesManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
         // Set window background early to prevent white flash in dark mode
         val isDarkAtLaunch = prefs.darkMode
         val isPitchBlackAtLaunch = prefs.pitchBlack
@@ -39,7 +41,6 @@ class MainActivity : FragmentActivity() {
             )
         }
 
-        super.onCreate(savedInstanceState)
         prefs.initDarkModeFlow()
         updateScreenshotPolicy()
 
