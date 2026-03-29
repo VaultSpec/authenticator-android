@@ -38,6 +38,9 @@ data class HomeUiState(
     val tapToReveal: Boolean = false,
     val tapToCopy: Boolean = false,
     val highlightOnTap: Boolean = false,
+    // Vendor filter
+    val multiAccountVendors: List<String> = emptyList(),
+    val selectedVendorFilter: String? = null,
 )
 
 @HiltViewModel
@@ -55,6 +58,7 @@ class HomeViewModel @Inject constructor(
     private val _tick = MutableStateFlow(System.currentTimeMillis())
     private val _revealedTokenIds = MutableStateFlow<Set<Long>>(emptySet())
     private val _highlightedTokenId = MutableStateFlow<Long?>(null)
+    private val _selectedVendorFilter = MutableStateFlow<String?>(null)
     private var revealJobs = mutableMapOf<Long, Job>()
 
     private val _state = MutableStateFlow(HomeUiState(
@@ -73,7 +77,7 @@ class HomeViewModel @Inject constructor(
             }
         }
 
-        // Combine token list + tick + category + search + categories from DB
+        // Combine token list + tick + category + search + categories + vendor filter from DB
         viewModelScope.launch {
             combine(
                 tokenRepository.observeAll(),
@@ -81,7 +85,22 @@ class HomeViewModel @Inject constructor(
                 _selectedCategory,
                 _searchQuery,
                 categoryDao.observeAll().map { list -> list.map { it.name } },
-            ) { allTokens, timestamp, category, query, categories ->
+                _selectedVendorFilter,
+            ) { params ->
+                val allTokens = params[0] as List<TokenEntry>
+                val timestamp = params[1] as Long
+                val category = params[2] as String
+                val query = params[3] as String
+                val categories = params[4] as List<String>
+                val vendorFilter = params[5] as String?
+
+                // Compute vendors with multiple accounts (case-insensitive grouping)
+                val vendorCounts = allTokens.groupBy { it.issuer.lowercase() }
+                val multiAccountVendors = vendorCounts
+                    .filter { it.value.size > 1 }
+                    .map { it.value.first().issuer }
+                    .sorted()
+
                 val filteredTokens = allTokens
                     .filter { token ->
                         if (category != "All") token.category == category else true
@@ -91,6 +110,16 @@ class HomeViewModel @Inject constructor(
                             token.issuer.contains(query, ignoreCase = true) ||
                             token.accountName.contains(query, ignoreCase = true)
                         } else true
+                    }
+                    .filter { token ->
+                        if (vendorFilter != null) {
+                            token.issuer.equals(vendorFilter, ignoreCase = true)
+                        } else true
+                    }
+                    .let { tokens ->
+                        if (vendorFilter != null) {
+                            tokens.sortedBy { it.accountName.lowercase() }
+                        } else tokens
                     }
 
                 val displayItems = filteredTokens.map { entry ->
@@ -119,6 +148,8 @@ class HomeViewModel @Inject constructor(
                     tapToReveal = prefs.tapToReveal,
                     tapToCopy = prefs.tapToCopy,
                     highlightOnTap = prefs.highlightOnTap,
+                    multiAccountVendors = multiAccountVendors,
+                    selectedVendorFilter = vendorFilter,
                 )
             }.collect { _state.value = it }
         }
@@ -126,10 +157,15 @@ class HomeViewModel @Inject constructor(
 
     fun onCategorySelected(category: String) {
         _selectedCategory.value = category
+        _selectedVendorFilter.value = null
     }
 
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
+    }
+
+    fun onVendorFilterSelected(vendor: String?) {
+        _selectedVendorFilter.value = vendor
     }
 
     fun onDeleteToken(entry: TokenEntry) {

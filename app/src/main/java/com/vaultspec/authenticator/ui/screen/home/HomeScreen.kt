@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -29,6 +30,7 @@ import com.vaultspec.authenticator.ui.component.SearchBar
 import com.vaultspec.authenticator.R
 import com.vaultspec.authenticator.ui.component.TokenCard
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onAddAccount: () -> Unit,
@@ -38,6 +40,7 @@ fun HomeScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var tokenToDelete by remember { mutableStateOf<TokenEntry?>(null) }
+    var showVendorFilter by remember { mutableStateOf(false) }
 
     if (tokenToDelete != null) {
         AlertDialog(
@@ -77,6 +80,87 @@ fun HomeScreen(
         )
     }
 
+    // Vendor Filter Bottom Sheet
+    if (showVendorFilter && state.multiAccountVendors.isNotEmpty()) {
+        ModalBottomSheet(
+            onDismissRequest = { showVendorFilter = false },
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
+            ) {
+                Text(
+                    text = "Filter by Vendor",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                )
+
+                // "Show All" option
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            viewModel.onVendorFilterSelected(null)
+                            showVendorFilter = false
+                        }
+                        .padding(vertical = 12.dp, horizontal = 12.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ClearAll,
+                        contentDescription = null,
+                        tint = if (state.selectedVendorFilter == null)
+                            MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Show All",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (state.selectedVendorFilter == null) FontWeight.Bold else FontWeight.Normal,
+                        color = if (state.selectedVendorFilter == null)
+                            MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
+                state.multiAccountVendors.forEach { vendor ->
+                    val isSelected = state.selectedVendorFilter.equals(vendor, ignoreCase = true)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                viewModel.onVendorFilterSelected(vendor)
+                                showVendorFilter = false
+                            }
+                            .padding(vertical = 12.dp, horizontal = 12.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Business,
+                            contentDescription = null,
+                            tint = if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = vendor,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -105,6 +189,9 @@ fun HomeScreen(
                         viewModel.lock()
                         onLocked()
                     },
+                    showFilterIcon = state.multiAccountVendors.isNotEmpty(),
+                    isFilterActive = state.selectedVendorFilter != null,
+                    onFilterClick = { showVendorFilter = true },
                 )
             }
 
@@ -205,6 +292,9 @@ fun HomeScreen(
 private fun HeaderSection(
     onSettings: () -> Unit,
     onLock: () -> Unit,
+    showFilterIcon: Boolean = false,
+    isFilterActive: Boolean = false,
+    onFilterClick: () -> Unit = {},
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -241,6 +331,18 @@ private fun HeaderSection(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
+        }
+
+        // Filter button (shown only when multi-account vendors exist)
+        if (showFilterIcon) {
+            IconButton(onClick = onFilterClick) {
+                Icon(
+                    imageVector = if (isFilterActive) Icons.Default.FilterAlt else Icons.Default.FilterList,
+                    contentDescription = "Filter by vendor",
+                    tint = if (isFilterActive) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         // Lock button

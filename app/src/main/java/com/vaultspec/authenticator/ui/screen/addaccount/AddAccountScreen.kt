@@ -10,9 +10,12 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -197,6 +200,7 @@ fun AddAccountScreen(
     // Add Category Dialog
     if (state.showAddCategoryDialog) {
         var newCategoryName by remember { mutableStateOf("") }
+        val focusRequester = remember { FocusRequester() }
         AlertDialog(
             onDismissRequest = viewModel::onDismissAddCategoryDialog,
             title = { Text("Add Category") },
@@ -207,8 +211,14 @@ fun AddAccountScreen(
                     label = { Text("Category Name") },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
                 )
+                LaunchedEffect(Unit) {
+                    delay(100)
+                    focusRequester.requestFocus()
+                }
             },
             confirmButton = {
                 TextButton(
