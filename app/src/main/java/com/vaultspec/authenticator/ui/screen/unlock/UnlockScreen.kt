@@ -1,6 +1,7 @@
 package com.vaultspec.authenticator.ui.screen.unlock
 
 import androidx.biometric.BiometricPrompt
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,8 +15,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.vaultspec.authenticator.R
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import java.util.concurrent.Executors
@@ -60,11 +63,10 @@ fun UnlockScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(24.dp)
     ) {
-        Icon(
-            imageVector = Icons.Default.Lock,
+        Image(
+            painter = painterResource(R.mipmap.ic_launcher_foreground),
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(100.dp),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
