@@ -245,7 +245,7 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Default.Info,
                 title = "VaultSpec Authenticator",
-                subtitle = "Version 1.1.0 — Local encrypted TOTP vault",
+                subtitle = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName} — Local encrypted TOTP vault",
                 onClick = {},
             )
 
