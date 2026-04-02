@@ -302,22 +302,14 @@ private fun HeaderSection(
             .fillMaxWidth()
             .padding(horizontal = 20.dp)
     ) {
-        // Avatar
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary)
-        ) {
-            Image(
-                painter = painterResource(R.mipmap.ic_launcher_foreground),
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-            )
-        }
+        // Logo
+        Image(
+            painter = painterResource(R.mipmap.ic_launcher_foreground),
+            contentDescription = null,
+            modifier = Modifier.size(52.dp),
+        )
 
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
