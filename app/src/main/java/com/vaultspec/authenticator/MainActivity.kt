@@ -6,6 +6,7 @@ import android.view.WindowManager
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -32,21 +33,28 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
 
         // Set window background early to prevent white flash in dark mode
-        val isDarkAtLaunch = prefs.darkMode
+        val themeModeAtLaunch = prefs.themeMode
         val isPitchBlackAtLaunch = prefs.pitchBlack
-        if (isDarkAtLaunch) {
+        if (themeModeAtLaunch == "dark") {
             window.decorView.setBackgroundColor(
                 if (isPitchBlackAtLaunch) android.graphics.Color.BLACK
                 else android.graphics.Color.parseColor("#121212")
             )
         }
 
-        prefs.initDarkModeFlow()
+        prefs.initThemeFlows()
         updateScreenshotPolicy()
 
         setContent {
-            val isDarkMode by prefs.darkModeFlow.collectAsState()
+            val themeMode by prefs.themeModeFlow.collectAsState()
             val isPitchBlack by prefs.pitchBlackFlow.collectAsState()
+            val systemDark = isSystemInDarkTheme()
+
+            val isDarkMode = when (themeMode) {
+                "dark" -> true
+                "light" -> false
+                else -> systemDark // "system"
+            }
 
             // Keep window background in sync with theme to prevent white flash
             SideEffect {

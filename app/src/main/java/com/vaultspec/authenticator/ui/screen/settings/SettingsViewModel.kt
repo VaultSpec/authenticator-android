@@ -48,6 +48,7 @@ data class SettingsUiState(
     val highlightOnTap: Boolean = false,
     val passwordReminderDays: Int = 15,
     val darkMode: Boolean = false,
+    val themeMode: String = "system",
     val pitchBlack: Boolean = false,
     val sessionTimeoutSeconds: Int = 0,
 )
@@ -69,6 +70,7 @@ class SettingsViewModel @Inject constructor(
         highlightOnTap = prefs.highlightOnTap,
         passwordReminderDays = prefs.passwordReminderDays,
         darkMode = prefs.darkMode,
+        themeMode = prefs.themeMode,
         pitchBlack = prefs.pitchBlack,
         sessionTimeoutSeconds = prefs.sessionTimeoutSeconds,
         backupFolderUri = prefs.backupFolderUri,
@@ -349,14 +351,18 @@ class SettingsViewModel @Inject constructor(
         _state.value = _state.value.copy(passwordReminderDays = days)
     }
 
-    fun onDarkModeToggle(enabled: Boolean) {
-        prefs.darkMode = enabled
-        if (!enabled) {
+    fun onThemeModeChange(mode: String) {
+        prefs.themeMode = mode
+        _state.value = _state.value.copy(themeMode = mode)
+        // Reset pitch black when switching away from dark
+        if (mode != "dark") {
             prefs.pitchBlack = false
-            _state.value = _state.value.copy(darkMode = enabled, pitchBlack = false)
-        } else {
-            _state.value = _state.value.copy(darkMode = enabled)
+            _state.value = _state.value.copy(pitchBlack = false)
         }
+    }
+
+    fun onDarkModeToggle(enabled: Boolean) {
+        onThemeModeChange(if (enabled) "dark" else "light")
     }
 
     fun onPitchBlackToggle(enabled: Boolean) {

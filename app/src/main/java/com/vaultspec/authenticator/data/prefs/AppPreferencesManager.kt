@@ -53,18 +53,27 @@ class AppPreferencesManager @Inject constructor(
         get() = prefs.getLong(KEY_LAST_PASSWORD_AUTH, 0L)
         set(value) = prefs.edit().putLong(KEY_LAST_PASSWORD_AUTH, value).apply()
 
-    private val _darkModeFlow = MutableStateFlow(false)
-    val darkModeFlow: StateFlow<Boolean> = _darkModeFlow.asStateFlow()
+    // Theme mode: "system", "light", "dark"
+    private val _themeModeFlow = MutableStateFlow("system")
+    val themeModeFlow: StateFlow<String> = _themeModeFlow.asStateFlow()
 
     private val _pitchBlackFlow = MutableStateFlow(false)
     val pitchBlackFlow: StateFlow<Boolean> = _pitchBlackFlow.asStateFlow()
 
-    var darkMode: Boolean
-        get() = prefs.getBoolean(KEY_DARK_MODE, false)
+    var themeMode: String
+        get() = prefs.getString(KEY_THEME_MODE, null)
+            ?: if (prefs.contains(KEY_DARK_MODE)) {
+                // Migrate legacy boolean to new tri-state
+                if (prefs.getBoolean(KEY_DARK_MODE, false)) "dark" else "light"
+            } else "system"
         set(value) {
-            prefs.edit().putBoolean(KEY_DARK_MODE, value).apply()
-            _darkModeFlow.value = value
+            prefs.edit().putString(KEY_THEME_MODE, value).apply()
+            _themeModeFlow.value = value
         }
+
+    // Legacy accessor kept for launch-time window background (no Compose context)
+    val darkMode: Boolean
+        get() = themeMode == "dark"
 
     var pitchBlack: Boolean
         get() = prefs.getBoolean(KEY_PITCH_BLACK, false)
@@ -73,8 +82,8 @@ class AppPreferencesManager @Inject constructor(
             _pitchBlackFlow.value = value
         }
 
-    fun initDarkModeFlow() {
-        _darkModeFlow.value = darkMode
+    fun initThemeFlows() {
+        _themeModeFlow.value = themeMode
         _pitchBlackFlow.value = pitchBlack
     }
 
@@ -109,7 +118,8 @@ class AppPreferencesManager @Inject constructor(
         private const val KEY_HIGHLIGHT_ON_TAP = "highlight_on_tap"
         private const val KEY_PASSWORD_REMINDER_DAYS = "password_reminder_days"
         private const val KEY_LAST_PASSWORD_AUTH = "last_password_auth_timestamp"
-        private const val KEY_DARK_MODE = "dark_mode"
+        private const val KEY_DARK_MODE = "dark_mode" // legacy
+        private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_PITCH_BLACK = "pitch_black"
         private const val KEY_SESSION_TIMEOUT = "session_timeout_seconds"
         private const val KEY_LAST_BACKGROUND = "last_background_timestamp"

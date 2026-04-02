@@ -170,12 +170,10 @@ fun SettingsScreen(
             // Appearance section
             SectionHeader("Appearance")
 
-            SettingsToggleItem(
-                icon = Icons.Default.DarkMode,
-                title = "Dark Mode",
-                subtitle = "Use dark theme for the app",
-                checked = state.darkMode,
-                onCheckedChange = viewModel::onDarkModeToggle,
+            // Theme mode selector
+            ThemeModeSelector(
+                themeMode = state.themeMode,
+                onThemeModeChange = viewModel::onThemeModeChange,
             )
 
             SettingsToggleItem(
@@ -184,7 +182,7 @@ fun SettingsScreen(
                 subtitle = "AMOLED-friendly pure black theme",
                 checked = state.pitchBlack,
                 onCheckedChange = viewModel::onPitchBlackToggle,
-                enabled = state.darkMode,
+                enabled = state.themeMode == "dark",
             )
 
             HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
@@ -412,6 +410,59 @@ fun SettingsScreen(
                 .setNegativeButtonText("Cancel")
                 .build()
             prompt.authenticate(promptInfo, BiometricPrompt.CryptoObject(cipher))
+        }
+    }
+}
+
+@Composable
+private fun ThemeModeSelector(
+    themeMode: String,
+    onThemeModeChange: (String) -> Unit,
+) {
+    Surface(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.DarkMode,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Theme",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    when (themeMode) {
+                        "light" -> "Light"
+                        "dark" -> "Dark"
+                        else -> "System default"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+            .padding(bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        listOf("system" to "System", "light" to "Light", "dark" to "Dark").forEach { (mode, label) ->
+            FilterChip(
+                selected = themeMode == mode,
+                onClick = { onThemeModeChange(mode) },
+                label = { Text(label) },
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }
