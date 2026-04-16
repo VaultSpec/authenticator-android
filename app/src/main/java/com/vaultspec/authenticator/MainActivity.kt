@@ -3,14 +3,13 @@ package com.vaultspec.authenticator
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.WindowManager
-import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import com.vaultspec.authenticator.data.model.VaultState
 import com.vaultspec.authenticator.data.prefs.AppPreferencesManager
@@ -42,6 +41,8 @@ class MainActivity : FragmentActivity() {
             )
         }
 
+        enableEdgeToEdge()
+
         prefs.initThemeFlows()
         updateScreenshotPolicy()
 
@@ -56,7 +57,7 @@ class MainActivity : FragmentActivity() {
                 else -> systemDark // "system"
             }
 
-            // Keep window background in sync with theme to prevent white flash
+            // Keep window background and system bar appearance in sync with theme
             SideEffect {
                 window.decorView.setBackgroundColor(
                     when {
@@ -65,27 +66,9 @@ class MainActivity : FragmentActivity() {
                         else -> android.graphics.Color.parseColor("#F5F7FA")
                     }
                 )
-            }
-
-            LaunchedEffect(isDarkMode) {
-                enableEdgeToEdge(
-                    statusBarStyle = if (isDarkMode) {
-                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-                    } else {
-                        SystemBarStyle.light(
-                            android.graphics.Color.TRANSPARENT,
-                            android.graphics.Color.TRANSPARENT,
-                        )
-                    },
-                    navigationBarStyle = if (isDarkMode) {
-                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-                    } else {
-                        SystemBarStyle.light(
-                            android.graphics.Color.TRANSPARENT,
-                            android.graphics.Color.TRANSPARENT,
-                        )
-                    },
-                )
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.isAppearanceLightStatusBars = !isDarkMode
+                insetsController.isAppearanceLightNavigationBars = !isDarkMode
             }
 
             VaultSpecTheme(darkTheme = isDarkMode, pitchBlack = isPitchBlack) {
