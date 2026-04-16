@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,6 +17,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -23,7 +27,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.vaultspec.authenticator.R
+import com.vaultspec.authenticator.ui.theme.LocalVaultSpecColors
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -56,16 +62,18 @@ fun SetupScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
-            .padding(24.dp)
+            .padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
-        Spacer(modifier = Modifier.height(60.dp))
+        Spacer(modifier = Modifier.height(48.dp))
 
         // VaultSpec logo
         Image(
-            painter = painterResource(R.mipmap.ic_launcher_foreground),
+            painter = painterResource(R.drawable.vaultspec_logo_mask),
             contentDescription = null,
-            modifier = Modifier.size(120.dp),
+            modifier = Modifier.size(88.dp),
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onBackground),
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -73,19 +81,18 @@ fun SetupScreen(
         Text(
             text = "VaultSpec",
             style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = "Secure your accounts with\nencrypted 2FA codes",
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(40.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
         // Password field
         var passwordVisible by remember { mutableStateOf(false) }
@@ -103,10 +110,19 @@ fun SetupScreen(
                         imageVector = if (passwordVisible) Icons.Default.VisibilityOff
                             else Icons.Default.Visibility,
                         contentDescription = "Toggle password visibility",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
                 }
             },
             shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+                cursorColor = MaterialTheme.colorScheme.primary,
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+            ),
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -127,10 +143,19 @@ fun SetupScreen(
                         imageVector = if (confirmVisible) Icons.Default.VisibilityOff
                             else Icons.Default.Visibility,
                         contentDescription = "Toggle confirm visibility",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
                 }
             },
             shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+                cursorColor = MaterialTheme.colorScheme.primary,
+                focusedLabelColor = MaterialTheme.colorScheme.primary,
+            ),
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -179,22 +204,41 @@ fun SetupScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // Setup button
+        val extra = LocalVaultSpecColors.current
         Button(
             onClick = viewModel::onSetup,
             enabled = !state.isLoading,
             shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+            contentPadding = PaddingValues(),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
         ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp,
-                )
-            } else {
-                Text("Create Vault", fontWeight = FontWeight.SemiBold)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(extra.unlockGradientTop, extra.unlockGradientBottom)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                    ),
+            ) {
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Text(
+                        "Create Vault",
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                    )
+                }
             }
         }
 
@@ -285,15 +329,34 @@ private fun RestoreDialog(
     onBiometricToggle: (Boolean) -> Unit,
     onRestore: () -> Unit,
 ) {
+    val dialogInputColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = MaterialTheme.colorScheme.primary,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
+        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+        cursorColor = MaterialTheme.colorScheme.primary,
+        focusedLabelColor = MaterialTheme.colorScheme.primary,
+    )
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Restore from Backup") },
+        shape = RoundedCornerShape(16.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Text(
+                "Restore from Backup",
+                style = MaterialTheme.typography.titleLarge,
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 // File selection
                 OutlinedButton(
                     onClick = onPickFile,
-                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
                 ) {
                     Icon(Icons.Default.FileOpen, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -311,14 +374,20 @@ private fun RestoreDialog(
                     placeholder = { Text("Password used when backing up") },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = dialogInputColors,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
-                HorizontalDivider()
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                )
 
                 Text(
                     "Set up your new vault:",
                     style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
                 )
 
                 // New password
@@ -328,6 +397,8 @@ private fun RestoreDialog(
                     label = { Text("New Vault Password") },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = dialogInputColors,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
@@ -337,11 +408,24 @@ private fun RestoreDialog(
                     label = { Text("Confirm New Password") },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = dialogInputColors,
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Enable Biometrics", modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.Default.Fingerprint,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Enable Biometrics",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                    )
                     Switch(
                         checked = state.restoreEnableBiometric,
                         onCheckedChange = onBiometricToggle,
@@ -369,6 +453,7 @@ private fun RestoreDialog(
             Button(
                 onClick = onRestore,
                 enabled = !state.isLoading,
+                shape = RoundedCornerShape(12.dp),
             ) {
                 if (state.isLoading) {
                     CircularProgressIndicator(
@@ -376,12 +461,15 @@ private fun RestoreDialog(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    Text("Restore")
+                    Text("Restore", fontWeight = FontWeight.SemiBold)
                 }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp),
+            ) {
                 Text("Cancel")
             }
         },

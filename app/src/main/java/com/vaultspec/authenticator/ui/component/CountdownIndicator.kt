@@ -1,5 +1,6 @@
 package com.vaultspec.authenticator.ui.component
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -27,8 +28,8 @@ fun CountdownIndicator(
     secondsRemaining: Int,
     totalSeconds: Int,
     modifier: Modifier = Modifier,
-    size: Dp = 40.dp,
-    strokeWidth: Dp = 3.dp,
+    size: Dp = 42.dp,
+    strokeWidth: Dp = 3.5.dp,
     progressColor: Color = RingProgress,
     backgroundColor: Color = RingBackground,
     textColor: Color = progressColor,
@@ -37,6 +38,18 @@ fun CountdownIndicator(
         targetValue = secondsRemaining.toFloat() / totalSeconds.toFloat(),
         animationSpec = tween(durationMillis = 1000, easing = LinearEasing),
         label = "countdown_progress"
+    )
+
+    val animatedProgressColor by animateColorAsState(
+        targetValue = progressColor,
+        animationSpec = tween(durationMillis = 400),
+        label = "countdown_color"
+    )
+
+    val animatedTextColor by animateColorAsState(
+        targetValue = textColor,
+        animationSpec = tween(durationMillis = 400),
+        label = "countdown_text_color"
     )
 
     Box(
@@ -58,7 +71,7 @@ fun CountdownIndicator(
             )
             // Progress ring
             drawArc(
-                color = progressColor,
+                color = animatedProgressColor,
                 startAngle = -90f,
                 sweepAngle = 360f * progress,
                 useCenter = false,
@@ -68,10 +81,10 @@ fun CountdownIndicator(
         Text(
             text = "$secondsRemaining",
             style = MaterialTheme.typography.bodySmall.copy(
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
             ),
-            color = textColor,
+            color = animatedTextColor,
         )
     }
 }

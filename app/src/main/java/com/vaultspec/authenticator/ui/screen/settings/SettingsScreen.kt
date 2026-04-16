@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -24,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vaultspec.authenticator.ui.theme.LocalVaultSpecColors
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,117 +89,123 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
         ) {
+            Spacer(modifier = Modifier.height(8.dp))
+
             // Security section
             SectionHeader("Security")
+            SettingsCard {
+                // Change password
+                SettingsItem(
+                    icon = Icons.Default.Key,
+                    title = "Change Password",
+                    subtitle = "Update your vault password",
+                    onClick = viewModel::onShowChangePassword,
+                )
 
-            // Change password
-            SettingsItem(
-                icon = Icons.Default.Key,
-                title = "Change Password",
-                subtitle = "Update your vault password",
-                onClick = viewModel::onShowChangePassword,
-            )
+                // Biometric toggle
+                SettingsToggleItem(
+                    icon = Icons.Default.Fingerprint,
+                    title = "Biometric Unlock",
+                    subtitle = "Use fingerprint or face to unlock",
+                    checked = state.biometricEnabled,
+                    onCheckedChange = viewModel::onBiometricToggle,
+                )
 
-            // Biometric toggle
-            SettingsToggleItem(
-                icon = Icons.Default.Fingerprint,
-                title = "Biometric Unlock",
-                subtitle = "Use fingerprint or face to unlock",
-                checked = state.biometricEnabled,
-                onCheckedChange = viewModel::onBiometricToggle,
-            )
+                // Session timeout
+                SettingsItem(
+                    icon = Icons.Default.Timer,
+                    title = "Session Timeout",
+                    subtitle = "Lock after: ${formatTimeout(state.sessionTimeoutSeconds)}",
+                    onClick = {
+                        val next = when (state.sessionTimeoutSeconds) {
+                            0 -> 120
+                            120 -> 300
+                            300 -> 600
+                            600 -> 900
+                            else -> 0
+                        }
+                        viewModel.onSessionTimeoutChange(next)
+                    },
+                )
+            }
 
-            // Session timeout
-            SettingsItem(
-                icon = Icons.Default.Timer,
-                title = "Session Timeout",
-                subtitle = "Lock after: ${formatTimeout(state.sessionTimeoutSeconds)}",
-                onClick = {
-                    val next = when (state.sessionTimeoutSeconds) {
-                        0 -> 120
-                        120 -> 300
-                        300 -> 600
-                        600 -> 900
-                        else -> 0
-                    }
-                    viewModel.onSessionTimeoutChange(next)
-                },
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Backup & Restore section
             SectionHeader("Backup & Restore")
+            SettingsCard {
+                SettingsItem(
+                    icon = Icons.Default.Folder,
+                    title = "Backup Folder",
+                    subtitle = if (state.backupFolderUri != null) "Folder selected \u2713" else "Tap to select backup folder",
+                    onClick = { backupFolderPickerLauncher.launch(null) },
+                )
 
-            SettingsItem(
-                icon = Icons.Default.Folder,
-                title = "Backup Folder",
-                subtitle = if (state.backupFolderUri != null) "Folder selected \u2713" else "Tap to select backup folder",
-                onClick = { backupFolderPickerLauncher.launch(null) },
-            )
+                SettingsItem(
+                    icon = Icons.Default.Lock,
+                    title = "Backup Password",
+                    subtitle = if (state.hasBackupPassword) "Password set \u2713" else "Tap to set backup password",
+                    onClick = viewModel::onShowBackupPasswordDialog,
+                )
 
-            SettingsItem(
-                icon = Icons.Default.Lock,
-                title = "Backup Password",
-                subtitle = if (state.hasBackupPassword) "Password set \u2713" else "Tap to set backup password",
-                onClick = viewModel::onShowBackupPasswordDialog,
-            )
+                SettingsItem(
+                    icon = Icons.Default.Backup,
+                    title = "Backup Now",
+                    subtitle = "Save encrypted backup to selected folder",
+                    onClick = { viewModel.onManualBackup(context) },
+                )
 
-            SettingsItem(
-                icon = Icons.Default.Backup,
-                title = "Backup Now",
-                subtitle = "Save encrypted backup to selected folder",
-                onClick = { viewModel.onManualBackup(context) },
-            )
+                SettingsToggleItem(
+                    icon = Icons.Default.Sync,
+                    title = "Auto-backup",
+                    subtitle = "Automatically backup when tokens change",
+                    checked = state.autoBackupEnabled,
+                    onCheckedChange = viewModel::onAutoBackupToggle,
+                )
 
-            SettingsToggleItem(
-                icon = Icons.Default.Sync,
-                title = "Auto-backup",
-                subtitle = "Automatically backup when tokens change",
-                checked = state.autoBackupEnabled,
-                onCheckedChange = viewModel::onAutoBackupToggle,
-            )
+                SettingsItem(
+                    icon = Icons.Default.Restore,
+                    title = "Restore from Backup",
+                    subtitle = "Import accounts from a backup file",
+                    onClick = viewModel::onShowRestoreDialog,
+                )
+            }
 
-            SettingsItem(
-                icon = Icons.Default.Restore,
-                title = "Restore from Backup",
-                subtitle = "Import accounts from a backup file",
-                onClick = viewModel::onShowRestoreDialog,
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Appearance section
             SectionHeader("Appearance")
+            SettingsCard {
+                // Theme mode selector
+                ThemeModeSelector(
+                    themeMode = state.themeMode,
+                    onThemeModeChange = viewModel::onThemeModeChange,
+                )
 
-            // Theme mode selector
-            ThemeModeSelector(
-                themeMode = state.themeMode,
-                onThemeModeChange = viewModel::onThemeModeChange,
-            )
+                SettingsToggleItem(
+                    icon = Icons.Default.Contrast,
+                    title = "Pitch Black",
+                    subtitle = "AMOLED-friendly pure black theme",
+                    checked = state.pitchBlack,
+                    onCheckedChange = viewModel::onPitchBlackToggle,
+                    enabled = state.themeMode == "dark",
+                )
+            }
 
-            SettingsToggleItem(
-                icon = Icons.Default.Contrast,
-                title = "Pitch Black",
-                subtitle = "AMOLED-friendly pure black theme",
-                checked = state.pitchBlack,
-                onCheckedChange = viewModel::onPitchBlackToggle,
-                enabled = state.themeMode == "dark",
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Behavior section
             SectionHeader("Behavior")
-
-            SettingsToggleItem(
-                icon = Icons.Default.Screenshot,
-                title = "Allow Screenshots",
-                subtitle = "Allow capturing screenshots of the app. Requires the app to be re-opened",
-                checked = state.allowScreenshots,
-                onCheckedChange = viewModel::onAllowScreenshotsToggle,
-            )
+            SettingsCard {
+                SettingsToggleItem(
+                    icon = Icons.Default.Screenshot,
+                    title = "Allow Screenshots",
+                    subtitle = "Allow capturing screenshots of the app. Requires the app to be re-opened",
+                    checked = state.allowScreenshots,
+                    onCheckedChange = viewModel::onAllowScreenshotsToggle,
+                )
 
             SettingsToggleItem(
                 icon = Icons.Default.Visibility,
@@ -236,36 +245,55 @@ fun SettingsScreen(
                     viewModel.onPasswordReminderDaysChange(next)
                 },
             )
+            }
 
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // About section
             SectionHeader("About")
+            SettingsCard {
+                SettingsItem(
+                    icon = Icons.Default.Info,
+                    title = "VaultSpec Authenticator",
+                    subtitle = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName} — Local encrypted TOTP vault",
+                    onClick = {},
+                )
 
-            SettingsItem(
-                icon = Icons.Default.Info,
-                title = "VaultSpec Authenticator",
-                subtitle = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName} — Local encrypted TOTP vault",
-                onClick = {},
-            )
+                SettingsItem(
+                    icon = Icons.Default.Policy,
+                    title = "Privacy Policy",
+                    subtitle = "View our privacy policy",
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.vaultspec.in/privacy"))
+                        context.startActivity(intent)
+                    },
+                )
+            }
 
-            SettingsItem(
-                icon = Icons.Default.Policy,
-                title = "Privacy Policy",
-                subtitle = "View our privacy policy",
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.vaultspec.in/privacy"))
-                    context.startActivity(intent)
-                },
-            )
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 
     // Change Password Dialog
     if (state.showChangePassword) {
+        val dialogInputColors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+            cursorColor = MaterialTheme.colorScheme.primary,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+        )
         AlertDialog(
             onDismissRequest = viewModel::onDismissChangePassword,
-            title = { Text("Change Password") },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    "Change Password",
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
@@ -274,6 +302,8 @@ fun SettingsScreen(
                         label = { Text("New Password") },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = dialogInputColors,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
@@ -282,6 +312,8 @@ fun SettingsScreen(
                         label = { Text("Confirm New Password") },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = dialogInputColors,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     state.error?.let {
@@ -290,10 +322,20 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                Button(onClick = viewModel::onChangePassword) { Text("Change") }
+                Button(
+                    onClick = viewModel::onChangePassword,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("Change", fontWeight = FontWeight.SemiBold)
+                }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::onDismissChangePassword) { Text("Cancel") }
+                TextButton(
+                    onClick = viewModel::onDismissChangePassword,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("Cancel")
+                }
             },
         )
     }
@@ -302,12 +344,20 @@ fun SettingsScreen(
     if (state.showBackupPasswordDialog) {
         AlertDialog(
             onDismissRequest = viewModel::onDismissBackupPasswordDialog,
-            title = { Text("Set Backup Password") },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    "Set Backup Password",
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         "This password will be used to encrypt your backups. You'll need it to restore.",
                         style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     OutlinedTextField(
                         value = state.backupPassword,
@@ -315,6 +365,15 @@ fun SettingsScreen(
                         label = { Text("Backup Password") },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     state.error?.let {
@@ -323,10 +382,20 @@ fun SettingsScreen(
                 }
             },
             confirmButton = {
-                Button(onClick = viewModel::onSaveBackupPassword) { Text("Save") }
+                Button(
+                    onClick = viewModel::onSaveBackupPassword,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("Save", fontWeight = FontWeight.SemiBold)
+                }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::onDismissBackupPasswordDialog) { Text("Cancel") }
+                TextButton(
+                    onClick = viewModel::onDismissBackupPasswordDialog,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("Cancel")
+                }
             },
         )
     }
@@ -335,17 +404,27 @@ fun SettingsScreen(
     if (state.showRestoreDialog) {
         AlertDialog(
             onDismissRequest = viewModel::onDismissRestoreDialog,
-            title = { Text("Restore from Backup") },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    "Restore from Backup",
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text(
                         "This will replace all current accounts with the backup data.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.error,
+                        color = Color(0xFFC93131),
                     )
                     OutlinedButton(
                         onClick = { filePickerLauncher.launch(arrayOf("*/*")) },
-                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
                     ) {
                         Icon(Icons.Default.FileOpen, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
@@ -360,6 +439,15 @@ fun SettingsScreen(
                         label = { Text("Backup Password") },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
+                            cursorColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                     )
                     state.error?.let {
@@ -371,16 +459,22 @@ fun SettingsScreen(
                 Button(
                     onClick = { viewModel.onRestore(context) },
                     enabled = !state.isLoading,
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     if (state.isLoading) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Restore")
+                        Text("Restore", fontWeight = FontWeight.SemiBold)
                     }
                 }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::onDismissRestoreDialog) { Text("Cancel") }
+                TextButton(
+                    onClick = viewModel::onDismissRestoreDialog,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text("Cancel")
+                }
             },
         )
     }
@@ -419,10 +513,10 @@ private fun ThemeModeSelector(
     themeMode: String,
     onThemeModeChange: (String) -> Unit,
 ) {
-    Surface(modifier = Modifier.fillMaxWidth()) {
+    Surface(modifier = Modifier.fillMaxWidth(), color = Color.Transparent) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
         ) {
             Icon(
                 imageVector = Icons.Default.DarkMode,
@@ -452,7 +546,7 @@ private fun ThemeModeSelector(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = 16.dp)
             .padding(bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -460,7 +554,30 @@ private fun ThemeModeSelector(
             FilterChip(
                 selected = themeMode == mode,
                 onClick = { onThemeModeChange(mode) },
-                label = { Text(label) },
+                label = {
+                    Text(
+                        label,
+                        fontWeight = if (themeMode == mode) FontWeight.SemiBold else FontWeight.Normal,
+                    )
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                    selectedLabelColor = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+                border = if (themeMode == mode)
+                    FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = true,
+                        selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                    )
+                else FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = false,
+                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                ),
                 modifier = Modifier.weight(1f),
             )
         }
@@ -474,8 +591,25 @@ private fun SectionHeader(title: String) {
         style = MaterialTheme.typography.labelLarge,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
     )
+}
+
+@Composable
+private fun SettingsCard(
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val extra = LocalVaultSpecColors.current
+    OutlinedCard(
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, extra.cardBorder),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(content = content)
+    }
 }
 
 @Composable
@@ -488,10 +622,11 @@ private fun SettingsItem(
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
+        color = Color.Transparent,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
         ) {
             Icon(
                 imageVector = icon,
@@ -517,10 +652,13 @@ private fun SettingsToggleItem(
     onCheckedChange: (Boolean) -> Unit,
     enabled: Boolean = true,
 ) {
-    Surface(modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = Color.Transparent,
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
         ) {
             Icon(
                 imageVector = icon,

@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Deep slate aligned with TextPrimary; pairs with Blue400/500 accents in foreground -->
-    <color name="ic_launcher_background">#FF1A1A2E</color>
+    <color name="ic_launcher_background">#FF000000</color>
 </resources>

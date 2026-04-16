@@ -12,22 +12,32 @@ import androidx.compose.ui.graphics.Color
 data class VaultSpecExtraColors(
     val cardBlue: Color,
     val cardWhite: Color,
+    val cardBorder: Color,
     val textOnBlue: Color,
     val ringBackground: Color,
     val ringProgress: Color,
+    val urgencyWarning: Color,
+    val urgencyDanger: Color,
     val categorySelected: Color,
     val categoryUnselected: Color,
+    val unlockGradientTop: Color,
+    val unlockGradientBottom: Color,
 )
 
 val LocalVaultSpecColors = staticCompositionLocalOf {
     VaultSpecExtraColors(
         cardBlue = CardBlue,
         cardWhite = CardWhite,
+        cardBorder = CardBorder,
         textOnBlue = TextOnBlue,
         ringBackground = RingBackground,
         ringProgress = RingProgress,
+        urgencyWarning = UrgencyWarning,
+        urgencyDanger = UrgencyDanger,
         categorySelected = CategorySelected,
         categoryUnselected = CategoryUnselected,
+        unlockGradientTop = UnlockGradientTopLight,
+        unlockGradientBottom = UnlockGradientBottomLight,
     )
 }
 
@@ -53,20 +63,25 @@ private val LightColorScheme = lightColorScheme(
 private val LightExtraColors = VaultSpecExtraColors(
     cardBlue = CardBlue,
     cardWhite = CardWhite,
+    cardBorder = CardBorder,
     textOnBlue = TextOnBlue,
     ringBackground = RingBackground,
     ringProgress = RingProgress,
+    urgencyWarning = UrgencyWarning,
+    urgencyDanger = UrgencyDanger,
     categorySelected = CategorySelected,
     categoryUnselected = CategoryUnselected,
+    unlockGradientTop = UnlockGradientTopLight,
+    unlockGradientBottom = UnlockGradientBottomLight,
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = Blue400,
-    onPrimary = Color(0xFF003258),
+    onPrimary = Color(0xFFFFFFFF),
     primaryContainer = Blue600,
     onPrimaryContainer = Blue100,
     secondary = DarkCategorySelected,
-    onSecondary = Color(0xFF003258),
+    onSecondary = Color(0xFFFFFFFF),
     secondaryContainer = DarkSurfaceVariant,
     onSecondaryContainer = DarkTextPrimary,
     surface = DarkSurface,
@@ -76,26 +91,31 @@ private val DarkColorScheme = darkColorScheme(
     background = DarkBackground,
     onBackground = DarkTextPrimary,
     outline = DarkGrayLight,
-    outlineVariant = DarkGrayLight,
+    outlineVariant = DarkCardBorder,
 )
 
 private val DarkExtraColors = VaultSpecExtraColors(
     cardBlue = Blue500,
     cardWhite = DarkCardWhite,
+    cardBorder = DarkCardBorder,
     textOnBlue = TextOnBlue,
     ringBackground = DarkRingBackground,
     ringProgress = Blue400,
+    urgencyWarning = UrgencyWarning,
+    urgencyDanger = UrgencyDanger,
     categorySelected = DarkCategorySelected,
     categoryUnselected = DarkCategoryUnselected,
+    unlockGradientTop = UnlockGradientTopDark,
+    unlockGradientBottom = UnlockGradientBottomDark,
 )
 
 private val PitchBlackColorScheme = darkColorScheme(
     primary = Blue400,
-    onPrimary = Color(0xFF003258),
+    onPrimary = Color(0xFFFFFFFF),
     primaryContainer = Blue600,
     onPrimaryContainer = Blue100,
     secondary = DarkCategorySelected,
-    onSecondary = Color(0xFF003258),
+    onSecondary = Color(0xFFFFFFFF),
     secondaryContainer = PitchBlackSurfaceVariant,
     onSecondaryContainer = DarkTextPrimary,
     surface = PitchBlackSurface,
@@ -105,17 +125,22 @@ private val PitchBlackColorScheme = darkColorScheme(
     background = PitchBlackBackground,
     onBackground = DarkTextPrimary,
     outline = PitchBlackGrayLight,
-    outlineVariant = PitchBlackGrayLight,
+    outlineVariant = PitchBlackCardBorder,
 )
 
 private val PitchBlackExtraColors = VaultSpecExtraColors(
     cardBlue = Blue500,
     cardWhite = PitchBlackCardWhite,
+    cardBorder = PitchBlackCardBorder,
     textOnBlue = TextOnBlue,
     ringBackground = PitchBlackRingBackground,
     ringProgress = Blue400,
+    urgencyWarning = UrgencyWarning,
+    urgencyDanger = UrgencyDanger,
     categorySelected = DarkCategorySelected,
     categoryUnselected = PitchBlackCategoryUnselected,
+    unlockGradientTop = UnlockGradientTopDark,
+    unlockGradientBottom = UnlockGradientBottomDark,
 )
 
 @Composable

@@ -110,6 +110,10 @@ class AppPreferencesManager @Inject constructor(
             else prefs.edit().remove(KEY_BACKUP_PASSWORD).apply()
         }
 
+    var onboardingCompleted: Boolean
+        get() = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
+        set(value) = prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETED, value).apply()
+
     companion object {
         private const val KEY_ALLOW_SCREENSHOTS = "allow_screenshots"
         private const val KEY_TAP_TO_REVEAL = "tap_to_reveal"
@@ -126,5 +130,6 @@ class AppPreferencesManager @Inject constructor(
         private const val KEY_BACKUP_FOLDER_URI = "backup_folder_uri"
         private const val KEY_AUTO_BACKUP = "auto_backup_enabled"
         private const val KEY_BACKUP_PASSWORD = "backup_password"
+        private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
     }
 }

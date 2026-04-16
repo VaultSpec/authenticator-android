@@ -11,34 +11,35 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.vaultspec.authenticator.data.model.VaultState
+import com.vaultspec.authenticator.data.prefs.AppPreferencesManager
 import com.vaultspec.authenticator.data.repository.VaultRepository
 import com.vaultspec.authenticator.ui.screen.addaccount.AddAccountScreen
 import com.vaultspec.authenticator.ui.screen.addaccount.AddAccountViewModel
 import com.vaultspec.authenticator.ui.screen.home.HomeScreen
+import com.vaultspec.authenticator.ui.screen.onboarding.OnboardingScreen
 import com.vaultspec.authenticator.ui.screen.scanner.QrScannerScreen
 import com.vaultspec.authenticator.ui.screen.settings.SettingsScreen
 import com.vaultspec.authenticator.ui.screen.setup.SetupScreen
+import com.vaultspec.authenticator.ui.screen.splash.SplashScreen
 import com.vaultspec.authenticator.ui.screen.unlock.UnlockScreen
 
 @Composable
 fun NavGraph(
     vaultRepository: VaultRepository,
+    prefs: AppPreferencesManager,
     navController: NavHostController = rememberNavController(),
 ) {
     val vaultState by vaultRepository.state.collectAsState()
 
-    // Compute startDestination only once to prevent NavHost from rebuilding
-    // mid-operation (e.g., during restore or biometric enrollment in setup).
-    val startDestination = remember {
-        when (vaultRepository.state.value) {
-            is VaultState.NeedsSetup -> Routes.SETUP
-            is VaultState.Locked -> Routes.UNLOCK
-            is VaultState.Unlocked -> Routes.HOME
-        }
-    }
+    // Always start with splash
+    val startDestination = Routes.SPLASH
 
     // React to vault lock: navigate to unlock/setup when vault state changes
+    // Skip auto-navigation while on splash or onboarding screens
     LaunchedEffect(vaultState) {
+        val currentRoute = navController.currentDestination?.route
+        if (currentRoute == Routes.SPLASH || currentRoute == Routes.ONBOARDING) return@LaunchedEffect
+
         when (vaultState) {
             is VaultState.Locked -> {
                 navController.navigate(Routes.UNLOCK) {
@@ -60,6 +61,41 @@ fun NavGraph(
         navController = navController,
         startDestination = startDestination,
     ) {
+        composable(Routes.SPLASH) {
+            SplashScreen(
+                onFinished = {
+                    val next = if (!prefs.onboardingCompleted) {
+                        Routes.ONBOARDING
+                    } else {
+                        when (vaultRepository.state.value) {
+                            is VaultState.NeedsSetup -> Routes.SETUP
+                            is VaultState.Locked -> Routes.UNLOCK
+                            is VaultState.Unlocked -> Routes.HOME
+                        }
+                    }
+                    navController.navigate(next) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                },
+            )
+        }
+
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(
+                onComplete = {
+                    prefs.onboardingCompleted = true
+                    val next = when (vaultRepository.state.value) {
+                        is VaultState.NeedsSetup -> Routes.SETUP
+                        is VaultState.Locked -> Routes.UNLOCK
+                        is VaultState.Unlocked -> Routes.HOME
+                    }
+                    navController.navigate(next) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
+                },
+            )
+        }
+
         composable(Routes.SETUP) {
             SetupScreen(
                 onSetupComplete = {

@@ -19,8 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,38 +45,64 @@ fun HomeScreen(
     var showVendorFilter by remember { mutableStateOf(false) }
 
     if (tokenToDelete != null) {
+        val deleteRed = Color(0xFFC93131)
         AlertDialog(
             onDismissRequest = { tokenToDelete = null },
+            shape = RoundedCornerShape(16.dp),
+            containerColor = MaterialTheme.colorScheme.surface,
+            tonalElevation = 0.dp,
             icon = {
                 Icon(
                     imageVector = Icons.Default.Delete,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
+                    tint = deleteRed,
+                    modifier = Modifier.size(28.dp),
                 )
             },
-            title = { Text("Delete Credential") },
+            title = {
+                Text(
+                    "Delete Credential",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                )
+            },
             text = {
                 Text(
                     "Are you sure you want to delete ${tokenToDelete!!.issuer}" +
-                        if (tokenToDelete!!.accountName.isNotBlank()) " (${tokenToDelete!!.accountName})?" else "?"
+                        if (tokenToDelete!!.accountName.isNotBlank()) " (${tokenToDelete!!.accountName})?" else "?" +
+                        "\n\nThis action cannot be undone.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
                 )
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
                         viewModel.onDeleteToken(tokenToDelete!!)
                         tokenToDelete = null
                     },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = deleteRed,
+                        contentColor = Color.White,
                     ),
                 ) {
-                    Text("Delete")
+                    Text(
+                        "Delete",
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
             },
             dismissButton = {
-                TextButton(onClick = { tokenToDelete = null }) {
-                    Text("Cancel")
+                TextButton(
+                    onClick = { tokenToDelete = null },
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        "Cancel",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             },
         )
@@ -182,7 +210,7 @@ fun HomeScreen(
         ) {
             // Header
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 HeaderSection(
                     onSettings = onSettings,
                     onLock = {
@@ -197,7 +225,7 @@ fun HomeScreen(
 
             // Search bar
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 SearchBar(
                     query = state.searchQuery,
                     onQueryChange = viewModel::onSearchQueryChange,
@@ -215,7 +243,7 @@ fun HomeScreen(
             }
 
             item {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             // Token cards
@@ -251,8 +279,8 @@ fun HomeScreen(
                                 contentAlignment = alignment,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 20.dp, vertical = 6.dp)
-                                    .clip(RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(MaterialTheme.colorScheme.error),
                             ) {
                                 Icon(
@@ -278,7 +306,7 @@ fun HomeScreen(
                             onTap = { viewModel.onTokenTap(item.entry.id, item.code) },
                             modifier = Modifier.padding(
                                 horizontal = 20.dp,
-                                vertical = 6.dp,
+                                vertical = 8.dp,
                             ),
                         )
                     }
@@ -304,22 +332,24 @@ private fun HeaderSection(
     ) {
         // Logo
         Image(
-            painter = painterResource(R.mipmap.ic_launcher_foreground),
+            painter = painterResource(R.drawable.vaultspec_logo_mask),
             contentDescription = null,
-            modifier = Modifier.size(52.dp),
+            modifier = Modifier.size(48.dp),
+            colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onBackground),
         )
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "VaultSpec",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "Welcome Back",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
@@ -363,19 +393,19 @@ private fun EmptyState(isSearching: Boolean) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(40.dp)
+            .padding(horizontal = 32.dp, vertical = 48.dp)
     ) {
         Icon(
             imageVector = if (isSearching) Icons.Default.SearchOff else Icons.Default.Shield,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+            modifier = Modifier.size(72.dp),
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = if (isSearching) "No services found"
                 else "No accounts yet",
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -384,7 +414,7 @@ private fun EmptyState(isSearching: Boolean) {
             text = if (isSearching) "Try a different search term"
                 else "Tap + to add your first account",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
         )
     }
 }

@@ -36,17 +36,24 @@ fun CategoryTabs(
                 label = {
                     Text(
                         text = category,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     )
                 },
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = extra.categorySelected,
                     selectedLabelColor = Color.White,
                     containerColor = extra.categoryUnselected,
                     labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 ),
-                border = null,
+                border = if (!isSelected) FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = false,
+                    borderColor = extra.cardBorder,
+                ) else null,
+                elevation = if (isSelected) FilterChipDefaults.filterChipElevation(
+                    elevation = 2.dp,
+                ) else null,
             )
         }
     }

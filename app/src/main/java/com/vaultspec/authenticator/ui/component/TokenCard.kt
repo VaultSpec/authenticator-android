@@ -43,29 +43,40 @@ fun TokenCard(
     val displayCode = if (isRevealed) formatCode(code) else "• • • • • •"
 
     val extra = LocalVaultSpecColors.current
-    val backgroundColor = if (isFeatured) extra.cardBlue else extra.cardWhite
-    val contentColor = if (isFeatured) extra.textOnBlue else MaterialTheme.colorScheme.onSurface
-    val subtitleColor = if (isFeatured) extra.textOnBlue.copy(alpha = 0.75f) else MaterialTheme.colorScheme.onSurfaceVariant
-    val ringProgress = if (isFeatured) Color.White else extra.ringProgress
-    val ringBg = if (isFeatured) Color.White.copy(alpha = 0.3f) else extra.ringBackground
-    val ringText = if (isFeatured) Color.White else extra.ringProgress
-    val iconTint = if (isFeatured) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val backgroundColor = extra.cardWhite
+    val contentColor = MaterialTheme.colorScheme.onSurface
+    val subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    // Urgency-aware ring colors
+    val urgencyColor = when {
+        secondsRemaining <= 5 -> extra.urgencyDanger
+        secondsRemaining <= 10 -> extra.urgencyWarning
+        else -> extra.ringProgress
+    }
+    val ringBg = extra.ringBackground
+    val ringText = urgencyColor
+    val iconTint = MaterialTheme.colorScheme.onSurfaceVariant
 
     val highlightBorder by animateColorAsState(
         targetValue = if (isHighlighted) MaterialTheme.colorScheme.primary else Color.Transparent,
         label = "highlight",
     )
 
+    // Subtle border — featured gets blue accent, others get neutral
+    val cardBorder = when {
+        isHighlighted -> BorderStroke(1.5.dp, highlightBorder)
+        isFeatured -> BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+        else -> BorderStroke(1.dp, extra.cardBorder)
+    }
+
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        border = if (isHighlighted) BorderStroke(2.dp, highlightBorder) else null,
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isFeatured) 6.dp else 1.dp
-        ),
+        border = cardBorder,
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable {
                 if (onTap != null) {
                     onTap()
@@ -75,9 +86,9 @@ fun TokenCard(
             }
     ) {
         Column(
-            modifier = Modifier.padding(20.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
-            // Top row: Service icon + name + email + arrow
+            // Top row: Service icon + name + email + copy
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
@@ -101,6 +112,7 @@ fun TokenCard(
                             text = accountName,
                             style = MaterialTheme.typography.bodySmall,
                             color = subtitleColor,
+                            maxLines = 1,
                         )
                     }
                 }
@@ -115,7 +127,7 @@ fun TokenCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Bottom row: TOTP code + countdown
             Row(
@@ -125,19 +137,19 @@ fun TokenCard(
                 Text(
                     text = displayCode,
                     style = MaterialTheme.typography.displayMedium.copy(
-                        fontSize = if (isFeatured) 32.sp else 28.sp,
-                        letterSpacing = 3.sp,
+                        fontSize = 28.sp,
+                        letterSpacing = 5.sp,
                     ),
                     color = contentColor,
-                    fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
                 )
 
                 CountdownIndicator(
                     secondsRemaining = secondsRemaining,
                     totalSeconds = period,
-                    size = 40.dp,
-                    progressColor = ringProgress,
+                    size = 42.dp,
+                    strokeWidth = 3.5.dp,
+                    progressColor = urgencyColor,
                     backgroundColor = ringBg,
                     textColor = ringText,
                 )
