@@ -3,8 +3,6 @@ package com.vaultspec.authenticator.ui.screen.addaccount
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -12,6 +10,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vaultspec.authenticator.ui.component.AppIcons
 import com.vaultspec.authenticator.ui.component.ErrorText
 import com.vaultspec.authenticator.ui.component.LargeTitle
 import com.vaultspec.authenticator.ui.component.NavBar
@@ -59,7 +58,7 @@ fun AddAccountScreen(
             TintedButton(
                 text = "Scan QR Code",
                 onClick = onScanQr,
-                icon = Icons.Default.QrCodeScanner,
+                icon = AppIcons.ScanQrCode,
             )
 
             Spacer(modifier = Modifier.height(28.dp))

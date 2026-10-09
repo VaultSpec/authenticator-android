@@ -16,10 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -227,7 +223,7 @@ fun VaultTextField(
             {
                 IconButton(onClick = { visible = !visible }) {
                     Icon(
-                        imageVector = if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        imageVector = if (visible) AppIcons.EyeOff else AppIcons.Eye,
                         contentDescription = if (visible) "Hide password" else "Show password",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
@@ -446,7 +442,7 @@ fun NavBar(
             .padding(horizontal = VaultSpecDimens.ScreenPadding, vertical = 8.dp),
     ) {
         CircleIconButton(
-            icon = Icons.Default.ArrowBackIosNew,
+            icon = AppIcons.ChevronLeft,
             contentDescription = "Back",
             onClick = onBack,
         )

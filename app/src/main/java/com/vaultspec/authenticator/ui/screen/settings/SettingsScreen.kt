@@ -9,8 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vaultspec.authenticator.ui.component.AppIcons
 import com.vaultspec.authenticator.ui.component.ErrorText
 import com.vaultspec.authenticator.ui.component.GroupCard
 import com.vaultspec.authenticator.ui.component.GroupDivider
@@ -102,7 +101,7 @@ fun SettingsScreen(
             SectionHeader("Security")
             GroupCard {
                 SettingsItem(
-                    icon = Icons.Default.Key,
+                    icon = AppIcons.Key,
                     iconColor = accent,
                     title = "Change Password",
                     subtitle = "Update your vault password",
@@ -110,7 +109,7 @@ fun SettingsScreen(
                 )
                 GroupDivider()
                 SettingsToggleItem(
-                    icon = Icons.Default.Fingerprint,
+                    icon = AppIcons.Fingerprint,
                     iconColor = extra.green,
                     title = "Biometric Unlock",
                     subtitle = "Use fingerprint or face to unlock",
@@ -119,7 +118,7 @@ fun SettingsScreen(
                 )
                 GroupDivider()
                 SettingsItem(
-                    icon = Icons.Default.Timer,
+                    icon = AppIcons.Timer,
                     iconColor = extra.orange,
                     title = "Session Timeout",
                     subtitle = "Lock after leaving the app",
@@ -144,25 +143,25 @@ fun SettingsScreen(
             SectionHeader("Backup & Restore")
             GroupCard {
                 SettingsItem(
-                    icon = Icons.Default.Folder,
+                    icon = AppIcons.Folder,
                     iconColor = accent,
                     title = "Backup Folder",
                     subtitle = if (state.backupFolderUri != null) "Folder selected" else "Tap to select backup folder",
-                    value = if (state.backupFolderUri != null) "Set" else null,
+                    action = if (state.backupFolderUri != null) "Change" else "Set",
                     onClick = { backupFolderPickerLauncher.launch(null) },
                 )
                 GroupDivider()
                 SettingsItem(
-                    icon = Icons.Default.Lock,
+                    icon = AppIcons.LockKeyhole,
                     iconColor = extra.gray,
                     title = "Backup Password",
                     subtitle = if (state.hasBackupPassword) "Password set" else "Tap to set backup password",
-                    value = if (state.hasBackupPassword) "Set" else null,
+                    action = if (state.hasBackupPassword) "Change" else "Set",
                     onClick = viewModel::onShowBackupPasswordDialog,
                 )
                 GroupDivider()
                 SettingsItem(
-                    icon = Icons.Default.Backup,
+                    icon = AppIcons.CloudUpload,
                     iconColor = extra.teal,
                     title = "Backup Now",
                     subtitle = "Save encrypted backup to selected folder",
@@ -170,7 +169,7 @@ fun SettingsScreen(
                 )
                 GroupDivider()
                 SettingsToggleItem(
-                    icon = Icons.Default.Sync,
+                    icon = AppIcons.RefreshCw,
                     iconColor = extra.green,
                     title = "Auto-backup",
                     subtitle = "Automatically backup when tokens change",
@@ -179,7 +178,7 @@ fun SettingsScreen(
                 )
                 GroupDivider()
                 SettingsItem(
-                    icon = Icons.Default.Restore,
+                    icon = AppIcons.History,
                     iconColor = extra.indigo,
                     title = "Restore from Backup",
                     subtitle = "Import accounts from a backup file",
@@ -196,7 +195,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
                 ) {
-                    IconTile(icon = Icons.Default.DarkMode, color = extra.indigo)
+                    IconTile(icon = AppIcons.Moon, color = extra.indigo)
                     Spacer(modifier = Modifier.width(12.dp))
                     Text("Theme", style = MaterialTheme.typography.bodyLarge)
                 }
@@ -208,7 +207,7 @@ fun SettingsScreen(
                 )
                 GroupDivider()
                 SettingsToggleItem(
-                    icon = Icons.Default.Contrast,
+                    icon = AppIcons.Contrast,
                     iconColor = extra.gray,
                     title = "Pitch Black",
                     subtitle = "AMOLED-friendly pure black theme",
@@ -224,7 +223,7 @@ fun SettingsScreen(
             SectionHeader("Behavior")
             GroupCard {
                 SettingsToggleItem(
-                    icon = Icons.Default.Screenshot,
+                    icon = AppIcons.Smartphone,
                     iconColor = extra.pink,
                     title = "Allow Screenshots",
                     subtitle = "Allow capturing screenshots of the app. Requires the app to be re-opened",
@@ -233,7 +232,7 @@ fun SettingsScreen(
                 )
                 GroupDivider()
                 SettingsToggleItem(
-                    icon = Icons.Default.Visibility,
+                    icon = AppIcons.Eye,
                     iconColor = extra.teal,
                     title = "Tap to Reveal Codes",
                     subtitle = "Codes are hidden until tapped (${state.revealTimeoutSeconds}s timeout)",
@@ -242,7 +241,7 @@ fun SettingsScreen(
                 )
                 GroupDivider()
                 SettingsToggleItem(
-                    icon = Icons.Default.ContentCopy,
+                    icon = AppIcons.Copy,
                     iconColor = accent,
                     title = "Tap to Copy Code",
                     subtitle = "Tap a token to copy code to clipboard",
@@ -251,7 +250,7 @@ fun SettingsScreen(
                 )
                 GroupDivider()
                 SettingsToggleItem(
-                    icon = Icons.Default.Highlight,
+                    icon = AppIcons.Highlighter,
                     iconColor = extra.orange,
                     title = "Highlight Token on Tap",
                     subtitle = "1st tap highlights, 2nd tap copies",
@@ -260,7 +259,7 @@ fun SettingsScreen(
                 )
                 GroupDivider()
                 SettingsItem(
-                    icon = Icons.Default.Schedule,
+                    icon = AppIcons.CalendarClock,
                     iconColor = extra.red,
                     title = "Password Reminder",
                     subtitle = "Ask for the password periodically",
@@ -284,7 +283,7 @@ fun SettingsScreen(
             SectionHeader("About")
             GroupCard {
                 SettingsItem(
-                    icon = Icons.Default.Info,
+                    icon = AppIcons.Info,
                     iconColor = extra.gray,
                     title = "VaultSpec Authenticator",
                     subtitle = "Local encrypted TOTP vault",
@@ -293,7 +292,7 @@ fun SettingsScreen(
                 )
                 GroupDivider()
                 SettingsItem(
-                    icon = Icons.Default.Policy,
+                    icon = AppIcons.ShieldCheck,
                     iconColor = accent,
                     title = "Privacy Policy",
                     subtitle = "View our privacy policy",
@@ -337,8 +336,11 @@ fun SettingsScreen(
     // Backup Password Dialog
     if (state.showBackupPasswordDialog) {
         VaultDialog(
-            title = "Set Backup Password",
-            message = "This password will be used to encrypt your backups. You'll need it to restore.",
+            title = if (state.hasBackupPassword) "Change Backup Password" else "Set Backup Password",
+            message = if (state.hasBackupPassword)
+                "New backups will be encrypted with this password. Older backups still need the previous one."
+            else
+                "This password will be used to encrypt your backups. You'll need it to restore.",
             confirmText = "Save",
             onConfirm = viewModel::onSaveBackupPassword,
             onDismiss = viewModel::onDismissBackupPasswordDialog,
@@ -346,7 +348,7 @@ fun SettingsScreen(
             VaultTextField(
                 value = state.backupPassword,
                 onValueChange = viewModel::onBackupPasswordChange,
-                label = "Backup Password",
+                label = if (state.hasBackupPassword) "New Backup Password" else "Backup Password",
                 isPassword = true,
                 onSurface = true,
             )
@@ -367,7 +369,7 @@ fun SettingsScreen(
         ) {
             TintedButton(
                 text = if (state.restoreFileUri != null) "File Selected" else "Select Backup File",
-                icon = if (state.restoreFileUri != null) Icons.Default.CheckCircle else Icons.Default.FileOpen,
+                icon = if (state.restoreFileUri != null) AppIcons.CircleCheck else AppIcons.FileUp,
                 onClick = { filePickerLauncher.launch(arrayOf("*/*")) },
             )
             VaultTextField(
@@ -462,6 +464,7 @@ private fun SettingsItem(
     subtitle: String,
     onClick: (() -> Unit)?,
     value: String? = null,
+    action: String? = null,
     cycles: Boolean = false,
 ) {
     val extra = LocalVaultSpecColors.current
@@ -480,10 +483,18 @@ private fun SettingsItem(
                 maxLines = 1,
             )
         }
+        if (action != null) {
+            Text(
+                text = action,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+            )
+        }
         if (onClick != null) {
             Spacer(modifier = Modifier.width(4.dp))
             Icon(
-                imageVector = if (cycles) Icons.Default.UnfoldMore else Icons.Default.ChevronRight,
+                imageVector = if (cycles) AppIcons.ChevronsUpDown else AppIcons.ChevronRight,
                 contentDescription = null,
                 tint = extra.tertiaryLabel,
                 modifier = Modifier.size(20.dp),

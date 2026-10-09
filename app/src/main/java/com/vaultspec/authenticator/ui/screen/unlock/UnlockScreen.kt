@@ -10,8 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -25,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaultspec.authenticator.R
+import com.vaultspec.authenticator.ui.component.AppIcons
 import com.vaultspec.authenticator.ui.component.ErrorText
 import com.vaultspec.authenticator.ui.component.PrimaryButton
 import com.vaultspec.authenticator.ui.component.TintedButton
@@ -149,7 +148,7 @@ fun UnlockScreen(
                     TintedButton(
                         text = "Use Biometrics",
                         onClick = { viewModel.triggerBiometric() },
-                        icon = Icons.Default.Fingerprint,
+                        icon = AppIcons.Fingerprint,
                     )
                 }
             }

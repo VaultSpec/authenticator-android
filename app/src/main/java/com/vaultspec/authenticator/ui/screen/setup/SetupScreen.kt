@@ -9,10 +9,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.FileOpen
-import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -27,6 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaultspec.authenticator.R
+import com.vaultspec.authenticator.ui.component.AppIcons
 import com.vaultspec.authenticator.ui.component.ErrorText
 import com.vaultspec.authenticator.ui.component.GroupCard
 import com.vaultspec.authenticator.ui.component.IconTile
@@ -209,7 +206,7 @@ private fun BiometricRow(
             .heightIn(min = 56.dp)
             .padding(horizontal = 16.dp, vertical = 4.dp),
     ) {
-        IconTile(icon = Icons.Default.Fingerprint, color = LocalVaultSpecColors.current.green)
+        IconTile(icon = AppIcons.Fingerprint, color = LocalVaultSpecColors.current.green)
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = title,
@@ -241,7 +238,7 @@ private fun RestoreDialog(
     ) {
         TintedButton(
             text = if (state.restoreFileUri != null) "File Selected" else "Select Backup File",
-            icon = if (state.restoreFileUri != null) Icons.Default.CheckCircle else Icons.Default.FileOpen,
+            icon = if (state.restoreFileUri != null) AppIcons.CircleCheck else AppIcons.FileUp,
             onClick = onPickFile,
         )
 
@@ -278,7 +275,7 @@ private fun RestoreDialog(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 4.dp),
         ) {
-            IconTile(icon = Icons.Default.Fingerprint, color = LocalVaultSpecColors.current.green)
+            IconTile(icon = AppIcons.Fingerprint, color = LocalVaultSpecColors.current.green)
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = "Enable Biometrics",

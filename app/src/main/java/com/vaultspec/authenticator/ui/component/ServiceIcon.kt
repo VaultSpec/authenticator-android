@@ -1,23 +1,35 @@
 package com.vaultspec.authenticator.ui.component
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 import coil.request.ImageRequest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // Maps issuer keywords to their domain for favicon lookup
 private val serviceDomains: Map<String, String> = mapOf(
@@ -146,49 +158,121 @@ private val serviceDomains: Map<String, String> = mapOf(
     "n26" to "n26.com",
 )
 
+private val WORD_SPLIT = Regex("[^a-z0-9.]+")
+
+/** Domain to fetch a favicon from when the bundled pack has no icon for [issuer]. */
+private fun faviconDomain(issuer: String): String {
+    val lower = issuer.lowercase().trim()
+    val words = lower.split(WORD_SPLIT).filter { it.isNotEmpty() }
+    words.firstOrNull { it.contains('.') && !it.startsWith('.') && !it.endsWith('.') }?.let { return it }
+    serviceDomains.entries.firstOrNull { (key, _) ->
+        key in words || (key.length >= 4 && lower.contains(key))
+    }?.let { return it.value }
+    return lower.replace(Regex("[^a-z0-9]"), "") + ".com"
+}
+
+private class BrandLookup(val icon: BrandIcon?)
+
+/**
+ * Service logo tile. Uses the bundled brand pack when it knows the issuer (crisp, offline),
+ * otherwise a remote favicon, otherwise a colored initial.
+ */
 @Composable
 fun ServiceIcon(
     issuer: String,
     modifier: Modifier = Modifier,
     size: Dp = 44.dp,
 ) {
-    val lowerIssuer = issuer.lowercase().trim()
-    val domain = serviceDomains.entries.firstOrNull { lowerIssuer.contains(it.key) }?.value
+    val context = LocalContext.current
+    val shape = RoundedCornerShape(size * 0.26f)
 
-    if (domain != null) {
-        val faviconUrl = "https://icons.duckduckgo.com/ip3/$domain.ico"
-        SubcomposeAsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(faviconUrl)
+    // null = lookup still running
+    val lookup by produceState(
+        initialValue = BrandIconPack.cached(issuer)?.let { BrandLookup(it) }
+            ?: if (BrandIconPack.isKnownMiss(issuer)) BrandLookup(null) else null,
+        issuer,
+    ) {
+        if (value == null) {
+            value = BrandLookup(
+                withContext(Dispatchers.IO) { BrandIconPack.find(context.applicationContext, issuer) }
+            )
+        }
+    }
+
+    val result = lookup
+    val icon = result?.icon
+    when {
+        // Hold a neutral tile while the lookup runs rather than flashing the fallback
+        result == null -> Box(
+            modifier = modifier
+                .size(size)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+
+        icon != null -> BrandTile(icon, issuer, size, shape, modifier)
+
+        // Favicons are small bitmaps: inset them on a white tile instead of upscaling
+        else -> SubcomposeAsyncImage(
+            model = ImageRequest.Builder(context)
+                .data("https://icons.duckduckgo.com/ip3/${faviconDomain(issuer)}.ico")
                 .crossfade(true)
                 .build(),
             contentDescription = issuer,
-            contentScale = ContentScale.Crop,
             loading = { LetterFallback(issuer, size) },
             error = { LetterFallback(issuer, size) },
+            success = image@{
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(size)
+                        .background(Color.White)
+                ) {
+                    this@image.SubcomposeAsyncImageContent(
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.size(size * 0.64f),
+                    )
+                }
+            },
             modifier = modifier
                 .size(size)
-                .clip(RoundedCornerShape(size * 0.26f))
-                .background(Color.White)
+                .clip(shape)
         )
-    } else {
-        // Try favicon from issuer as domain directly
-        val guessDomain = lowerIssuer.replace(" ", "") + ".com"
-        val faviconUrl = "https://icons.duckduckgo.com/ip3/$guessDomain.ico"
-        SubcomposeAsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(faviconUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = issuer,
-            contentScale = ContentScale.Crop,
-            loading = { LetterFallback(issuer, size) },
-            error = { LetterFallback(issuer, size) },
-            modifier = modifier
-                .size(size)
-                .clip(RoundedCornerShape(size * 0.26f))
-                .background(Color.White)
-        )
+    }
+}
+
+@Composable
+private fun BrandTile(
+    icon: BrandIcon,
+    issuer: String,
+    size: Dp,
+    shape: RoundedCornerShape,
+    modifier: Modifier,
+) {
+    val brandLuminance = icon.color.luminance()
+    val darkTheme = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+    // Near-black brands disappear on dark cards: flip them to a white tile with a brand-colored glyph
+    val invert = darkTheme && brandLuminance < 0.04f
+    val tileColor = if (invert) Color.White else icon.color
+    val glyphColor = when {
+        invert -> icon.color
+        brandLuminance > 0.6f -> Color(0xFF1C1C1E)
+        else -> Color.White
+    }
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(size)
+            .clip(shape)
+            .background(tileColor)
+            .semantics { contentDescription = issuer }
+    ) {
+        Canvas(modifier = Modifier.size(size * 0.56f)) {
+            scale(this.size.width / BrandIconPack.VIEWPORT, pivot = Offset.Zero) {
+                drawPath(icon.path, glyphColor)
+            }
+        }
     }
 }
 
@@ -200,7 +284,6 @@ private fun LetterFallback(issuer: String, size: Dp) {
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(size)
-            .clip(RoundedCornerShape(size * 0.26f))
             .background(bgColor)
     ) {
         Text(

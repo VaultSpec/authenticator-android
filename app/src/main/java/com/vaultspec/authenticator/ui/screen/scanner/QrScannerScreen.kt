@@ -3,7 +3,6 @@ package com.vaultspec.authenticator.ui.screen.scanner
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -12,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import com.vaultspec.authenticator.ui.component.AppIcons
 import com.vaultspec.authenticator.ui.component.CircleIconButton
 import com.vaultspec.authenticator.ui.component.GrayButton
 import com.vaultspec.authenticator.ui.component.HeroIcon
@@ -30,9 +30,6 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -185,7 +182,7 @@ private fun CameraPreview(
 
         // Back button overlay
         CircleIconButton(
-            icon = Icons.Default.ArrowBackIosNew,
+            icon = AppIcons.ChevronLeft,
             contentDescription = "Back",
             onClick = onNavigateBack,
             tint = Color.White,
@@ -224,7 +221,7 @@ private fun PermissionRequest(onNavigateBack: () -> Unit, permanentlyDenied: Boo
             .systemBarsPadding()
             .padding(horizontal = 32.dp, vertical = 24.dp)
     ) {
-        HeroIcon(icon = Icons.Default.CameraAlt)
+        HeroIcon(icon = AppIcons.Camera)
         Spacer(modifier = Modifier.height(20.dp))
         Text(
             text = "Camera Access Needed",

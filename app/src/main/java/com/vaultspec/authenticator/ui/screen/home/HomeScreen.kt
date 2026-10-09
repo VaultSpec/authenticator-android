@@ -8,8 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.vaultspec.authenticator.R
 import com.vaultspec.authenticator.data.db.entity.TokenEntry
+import com.vaultspec.authenticator.ui.component.AppIcons
 import com.vaultspec.authenticator.ui.component.CategoryTabs
 import com.vaultspec.authenticator.ui.component.CircleIconButton
 import com.vaultspec.authenticator.ui.component.GroupCard
@@ -54,7 +53,7 @@ fun HomeScreen(
         VaultDialog(
             title = "Delete Account?",
             message = "$name will be removed from your vault. This action cannot be undone.",
-            icon = Icons.Default.Delete,
+            icon = AppIcons.Trash,
             destructive = true,
             confirmText = "Delete",
             onConfirm = {
@@ -113,7 +112,7 @@ fun HomeScreen(
     Scaffold(
         floatingActionButton = {
             CircleIconButton(
-                icon = Icons.Default.Add,
+                icon = AppIcons.Plus,
                 contentDescription = "Add account",
                 onClick = onAddAccount,
                 tint = Color.White,
@@ -203,7 +202,7 @@ fun HomeScreen(
                                     .background(extra.red),
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Delete,
+                                    imageVector = AppIcons.Trash,
                                     contentDescription = "Delete",
                                     tint = Color.White,
                                     modifier = Modifier.padding(horizontal = 24.dp),
@@ -279,7 +278,7 @@ private fun HeaderSection(
             // Filter button (shown only when multi-account vendors exist)
             if (showFilterIcon) {
                 CircleIconButton(
-                    icon = if (isFilterActive) Icons.Default.FilterAlt else Icons.Default.FilterList,
+                    icon = if (isFilterActive) AppIcons.ListFilter else AppIcons.ListFilter,
                     contentDescription = "Filter by vendor",
                     onClick = onFilterClick,
                     tint = if (isFilterActive) Color.White else MaterialTheme.colorScheme.onSurface,
@@ -289,14 +288,14 @@ private fun HeaderSection(
             }
 
             CircleIconButton(
-                icon = Icons.Default.Lock,
+                icon = AppIcons.Lock,
                 contentDescription = "Lock vault",
                 onClick = onLock,
                 tint = MaterialTheme.colorScheme.onSurface,
             )
 
             CircleIconButton(
-                icon = Icons.Default.Settings,
+                icon = AppIcons.Settings,
                 contentDescription = "Settings",
                 onClick = onSettings,
                 tint = MaterialTheme.colorScheme.onSurface,
@@ -327,7 +326,7 @@ private fun VendorRow(
         )
         if (isSelected) {
             Icon(
-                imageVector = Icons.Default.Check,
+                imageVector = AppIcons.Check,
                 contentDescription = "Selected",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(22.dp),
@@ -345,7 +344,7 @@ private fun EmptyState(isSearching: Boolean, onAddAccount: () -> Unit) {
             .padding(horizontal = 40.dp, vertical = 56.dp)
     ) {
         HeroIcon(
-            icon = if (isSearching) Icons.Default.SearchOff else Icons.Default.Shield,
+            icon = if (isSearching) AppIcons.SearchX else AppIcons.Shield,
         )
         Spacer(modifier = Modifier.height(20.dp))
         Text(
@@ -367,7 +366,7 @@ private fun EmptyState(isSearching: Boolean, onAddAccount: () -> Unit) {
             TintedButton(
                 text = "Add Account",
                 onClick = onAddAccount,
-                icon = Icons.Default.Add,
+                icon = AppIcons.Plus,
                 modifier = Modifier.widthIn(min = 200.dp),
             )
         }

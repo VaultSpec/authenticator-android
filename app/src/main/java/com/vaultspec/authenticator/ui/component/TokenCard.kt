@@ -11,8 +11,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -116,7 +114,7 @@ fun TokenCard(
             Spacer(modifier = Modifier.width(12.dp))
 
             CircleIconButton(
-                icon = Icons.Filled.ContentCopy,
+                icon = AppIcons.Copy,
                 contentDescription = "Copy code",
                 onClick = { copyToClipboard(context, code) },
                 tint = if (isFeatured) Color.White else MaterialTheme.colorScheme.primary,
