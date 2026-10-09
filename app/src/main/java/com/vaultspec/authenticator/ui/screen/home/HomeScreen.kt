@@ -1,8 +1,5 @@
 package com.vaultspec.authenticator.ui.screen.home
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,19 +15,26 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vaultspec.authenticator.R
 import com.vaultspec.authenticator.data.db.entity.TokenEntry
 import com.vaultspec.authenticator.ui.component.CategoryTabs
+import com.vaultspec.authenticator.ui.component.CircleIconButton
+import com.vaultspec.authenticator.ui.component.GroupCard
+import com.vaultspec.authenticator.ui.component.GroupDivider
+import com.vaultspec.authenticator.ui.component.HeroIcon
 import com.vaultspec.authenticator.ui.component.SearchBar
-import com.vaultspec.authenticator.R
+import com.vaultspec.authenticator.ui.component.TintedButton
 import com.vaultspec.authenticator.ui.component.TokenCard
+import com.vaultspec.authenticator.ui.component.VaultDialog
+import com.vaultspec.authenticator.ui.theme.LocalVaultSpecColors
+import com.vaultspec.authenticator.ui.theme.VaultSpecDimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,70 +45,23 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val extra = LocalVaultSpecColors.current
     var tokenToDelete by remember { mutableStateOf<TokenEntry?>(null) }
     var showVendorFilter by remember { mutableStateOf(false) }
 
-    if (tokenToDelete != null) {
-        val deleteRed = Color(0xFFC93131)
-        AlertDialog(
-            onDismissRequest = { tokenToDelete = null },
-            shape = RoundedCornerShape(16.dp),
-            containerColor = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp,
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = deleteRed,
-                    modifier = Modifier.size(28.dp),
-                )
+    tokenToDelete?.let { token ->
+        val name = if (token.accountName.isNotBlank()) "${token.issuer} (${token.accountName})" else token.issuer
+        VaultDialog(
+            title = "Delete Account?",
+            message = "$name will be removed from your vault. This action cannot be undone.",
+            icon = Icons.Default.Delete,
+            destructive = true,
+            confirmText = "Delete",
+            onConfirm = {
+                viewModel.onDeleteToken(token)
+                tokenToDelete = null
             },
-            title = {
-                Text(
-                    "Delete Credential",
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center,
-                )
-            },
-            text = {
-                Text(
-                    "Are you sure you want to delete ${tokenToDelete!!.issuer}" +
-                        if (tokenToDelete!!.accountName.isNotBlank()) " (${tokenToDelete!!.accountName})?" else "?" +
-                        "\n\nThis action cannot be undone.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.onDeleteToken(tokenToDelete!!)
-                        tokenToDelete = null
-                    },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = deleteRed,
-                        contentColor = Color.White,
-                    ),
-                ) {
-                    Text(
-                        "Delete",
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { tokenToDelete = null },
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Text(
-                        "Cancel",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            },
+            onDismiss = { tokenToDelete = null },
         )
     }
 
@@ -112,76 +69,40 @@ fun HomeScreen(
     if (showVendorFilter && state.multiAccountVendors.isNotEmpty()) {
         ModalBottomSheet(
             onDismissRequest = { showVendorFilter = false },
+            containerColor = MaterialTheme.colorScheme.background,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            dragHandle = { BottomSheetDefaults.DragHandle(color = extra.tertiaryLabel) },
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = VaultSpecDimens.ScreenPadding)
                     .padding(bottom = 32.dp),
             ) {
                 Text(
                     text = "Filter by Vendor",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(bottom = 16.dp),
                 )
 
-                // "Show All" option
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable {
+                GroupCard {
+                    VendorRow(
+                        label = "Show All",
+                        isSelected = state.selectedVendorFilter == null,
+                        onClick = {
                             viewModel.onVendorFilterSelected(null)
                             showVendorFilter = false
-                        }
-                        .padding(vertical = 12.dp, horizontal = 12.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ClearAll,
-                        contentDescription = null,
-                        tint = if (state.selectedVendorFilter == null)
-                            MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        },
                     )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Show All",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = if (state.selectedVendorFilter == null) FontWeight.Bold else FontWeight.Normal,
-                        color = if (state.selectedVendorFilter == null)
-                            MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-
-                state.multiAccountVendors.forEach { vendor ->
-                    val isSelected = state.selectedVendorFilter.equals(vendor, ignoreCase = true)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable {
+                    state.multiAccountVendors.forEach { vendor ->
+                        GroupDivider(startIndent = 16.dp)
+                        VendorRow(
+                            label = vendor,
+                            isSelected = state.selectedVendorFilter.equals(vendor, ignoreCase = true),
+                            onClick = {
                                 viewModel.onVendorFilterSelected(vendor)
                                 showVendorFilter = false
-                            }
-                            .padding(vertical = 12.dp, horizontal = 12.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Business,
-                            contentDescription = null,
-                            tint = if (isSelected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = vendor,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurface,
+                            },
                         )
                     }
                 }
@@ -191,26 +112,26 @@ fun HomeScreen(
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
+            CircleIconButton(
+                icon = Icons.Default.Add,
+                contentDescription = "Add account",
                 onClick = onAddAccount,
+                tint = Color.White,
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = CircleShape,
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add account")
-            }
+                size = 60.dp,
+                modifier = Modifier.shadow(8.dp, CircleShape),
+            )
         },
         containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         LazyColumn(
-            contentPadding = PaddingValues(bottom = 88.dp),
+            contentPadding = PaddingValues(bottom = 96.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
             // Header
             item {
-                Spacer(modifier = Modifier.height(20.dp))
                 HeaderSection(
                     onSettings = onSettings,
                     onLock = {
@@ -225,31 +146,29 @@ fun HomeScreen(
 
             // Search bar
             item {
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 SearchBar(
                     query = state.searchQuery,
                     onQueryChange = viewModel::onSearchQueryChange,
+                    placeholder = "Search services",
                 )
             }
 
             // Category tabs
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
                 CategoryTabs(
                     categories = state.categories,
                     selectedCategory = state.selectedCategory,
                     onCategorySelected = viewModel::onCategorySelected,
                 )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
             }
 
             // Token cards
             if (state.tokens.isEmpty()) {
                 item {
-                    EmptyState(isSearching = state.isSearching)
+                    EmptyState(isSearching = state.isSearching, onAddAccount = onAddAccount)
                 }
             } else {
                 itemsIndexed(
@@ -279,14 +198,14 @@ fun HomeScreen(
                                 contentAlignment = alignment,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 20.dp, vertical = 8.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.error),
+                                    .padding(horizontal = VaultSpecDimens.ScreenPadding, vertical = 6.dp)
+                                    .clip(VaultSpecDimens.CardShape)
+                                    .background(extra.red),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
                                     contentDescription = "Delete",
-                                    tint = MaterialTheme.colorScheme.onError,
+                                    tint = Color.White,
                                     modifier = Modifier.padding(horizontal = 24.dp),
                                 )
                             }
@@ -305,8 +224,8 @@ fun HomeScreen(
                             isHighlighted = state.highlightedTokenId == item.entry.id,
                             onTap = { viewModel.onTokenTap(item.entry.id, item.code) },
                             modifier = Modifier.padding(
-                                horizontal = 20.dp,
-                                vertical = 8.dp,
+                                horizontal = VaultSpecDimens.ScreenPadding,
+                                vertical = 6.dp,
                             ),
                         )
                     }
@@ -328,9 +247,9 @@ private fun HeaderSection(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp)
+            .padding(horizontal = VaultSpecDimens.ScreenPadding)
+            .padding(top = 12.dp),
     ) {
-        // Logo
         Image(
             painter = painterResource(R.drawable.vaultspec_logo_mask),
             contentDescription = null,
@@ -344,77 +263,113 @@ private fun HeaderSection(
             Text(
                 text = "VaultSpec",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "Welcome Back",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
             )
         }
 
-        // Filter button (shown only when multi-account vendors exist)
-        if (showFilterIcon) {
-            IconButton(onClick = onFilterClick) {
-                Icon(
-                    imageVector = if (isFilterActive) Icons.Default.FilterAlt else Icons.Default.FilterList,
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Filter button (shown only when multi-account vendors exist)
+            if (showFilterIcon) {
+                CircleIconButton(
+                    icon = if (isFilterActive) Icons.Default.FilterAlt else Icons.Default.FilterList,
                     contentDescription = "Filter by vendor",
-                    tint = if (isFilterActive) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    onClick = onFilterClick,
+                    tint = if (isFilterActive) Color.White else MaterialTheme.colorScheme.onSurface,
+                    containerColor = if (isFilterActive) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surface,
                 )
             }
-        }
 
-        // Lock button
-        IconButton(onClick = onLock) {
-            Icon(
-                imageVector = Icons.Default.Lock,
+            CircleIconButton(
+                icon = Icons.Default.Lock,
                 contentDescription = "Lock vault",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = onLock,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
-        }
 
-        // Settings button
-        IconButton(onClick = onSettings) {
-            Icon(
-                imageVector = Icons.Default.Settings,
+            CircleIconButton(
+                icon = Icons.Default.Settings,
                 contentDescription = "Settings",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = onSettings,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
     }
 }
 
 @Composable
-private fun EmptyState(isSearching: Boolean) {
+private fun VendorRow(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .heightIn(min = 52.dp)
+            .padding(horizontal = 16.dp),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (isSelected) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Selected",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun EmptyState(isSearching: Boolean, onAddAccount: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 48.dp)
+            .padding(horizontal = 40.dp, vertical = 56.dp)
     ) {
-        Icon(
-            imageVector = if (isSearching) Icons.Default.SearchOff else Icons.Default.Shield,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
-            modifier = Modifier.size(72.dp),
+        HeroIcon(
+            icon = if (isSearching) Icons.Default.SearchOff else Icons.Default.Shield,
         )
         Spacer(modifier = Modifier.height(20.dp))
         Text(
-            text = if (isSearching) "No services found"
-                else "No accounts yet",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = if (isSearching) "No Results" else "No Accounts Yet",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = if (isSearching) "Try a different search term"
-                else "Tap + to add your first account",
+            text = if (isSearching) "Try a different search term."
+                else "Add your first account to start generating codes.",
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
         )
+        if (!isSearching) {
+            Spacer(modifier = Modifier.height(24.dp))
+            TintedButton(
+                text = "Add Account",
+                onClick = onAddAccount,
+                icon = Icons.Default.Add,
+                modifier = Modifier.widthIn(min = 200.dp),
+            )
+        }
     }
 }

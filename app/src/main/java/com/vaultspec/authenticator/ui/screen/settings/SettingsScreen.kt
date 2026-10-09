@@ -4,31 +4,40 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vaultspec.authenticator.ui.component.ErrorText
+import com.vaultspec.authenticator.ui.component.GroupCard
+import com.vaultspec.authenticator.ui.component.GroupDivider
+import com.vaultspec.authenticator.ui.component.IconTile
+import com.vaultspec.authenticator.ui.component.LargeTitle
+import com.vaultspec.authenticator.ui.component.NavBar
+import com.vaultspec.authenticator.ui.component.SectionHeader
+import com.vaultspec.authenticator.ui.component.SegmentedControl
+import com.vaultspec.authenticator.ui.component.TintedButton
+import com.vaultspec.authenticator.ui.component.VaultDialog
+import com.vaultspec.authenticator.ui.component.VaultSwitch
+import com.vaultspec.authenticator.ui.component.VaultTextField
 import com.vaultspec.authenticator.ui.theme.LocalVaultSpecColors
+import com.vaultspec.authenticator.ui.theme.VaultSpecDimens
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
@@ -36,6 +45,8 @@ fun SettingsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
+    val extra = LocalVaultSpecColors.current
+    val accent = MaterialTheme.colorScheme.primary
     val snackbarHostState = remember { SnackbarHostState() }
 
     // SAF folder picker for backup folder selection
@@ -72,52 +83,48 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-            )
-        },
+        topBar = { NavBar(onBack = onNavigateBack) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background,
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = VaultSpecDimens.ScreenPadding)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            LargeTitle(text = "Settings")
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Security section
             SectionHeader("Security")
-            SettingsCard {
-                // Change password
+            GroupCard {
                 SettingsItem(
                     icon = Icons.Default.Key,
+                    iconColor = accent,
                     title = "Change Password",
                     subtitle = "Update your vault password",
                     onClick = viewModel::onShowChangePassword,
                 )
-
-                // Biometric toggle
+                GroupDivider()
                 SettingsToggleItem(
                     icon = Icons.Default.Fingerprint,
+                    iconColor = extra.green,
                     title = "Biometric Unlock",
                     subtitle = "Use fingerprint or face to unlock",
                     checked = state.biometricEnabled,
                     onCheckedChange = viewModel::onBiometricToggle,
                 )
-
-                // Session timeout
+                GroupDivider()
                 SettingsItem(
                     icon = Icons.Default.Timer,
+                    iconColor = extra.orange,
                     title = "Session Timeout",
-                    subtitle = "Lock after: ${formatTimeout(state.sessionTimeoutSeconds)}",
+                    subtitle = "Lock after leaving the app",
+                    value = formatTimeout(state.sessionTimeoutSeconds),
+                    cycles = true,
                     onClick = {
                         val next = when (state.sessionTimeoutSeconds) {
                             0 -> 120
@@ -131,61 +138,78 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Backup & Restore section
             SectionHeader("Backup & Restore")
-            SettingsCard {
+            GroupCard {
                 SettingsItem(
                     icon = Icons.Default.Folder,
+                    iconColor = accent,
                     title = "Backup Folder",
-                    subtitle = if (state.backupFolderUri != null) "Folder selected \u2713" else "Tap to select backup folder",
+                    subtitle = if (state.backupFolderUri != null) "Folder selected" else "Tap to select backup folder",
+                    value = if (state.backupFolderUri != null) "Set" else null,
                     onClick = { backupFolderPickerLauncher.launch(null) },
                 )
-
+                GroupDivider()
                 SettingsItem(
                     icon = Icons.Default.Lock,
+                    iconColor = extra.gray,
                     title = "Backup Password",
-                    subtitle = if (state.hasBackupPassword) "Password set \u2713" else "Tap to set backup password",
+                    subtitle = if (state.hasBackupPassword) "Password set" else "Tap to set backup password",
+                    value = if (state.hasBackupPassword) "Set" else null,
                     onClick = viewModel::onShowBackupPasswordDialog,
                 )
-
+                GroupDivider()
                 SettingsItem(
                     icon = Icons.Default.Backup,
+                    iconColor = extra.teal,
                     title = "Backup Now",
                     subtitle = "Save encrypted backup to selected folder",
                     onClick = { viewModel.onManualBackup(context) },
                 )
-
+                GroupDivider()
                 SettingsToggleItem(
                     icon = Icons.Default.Sync,
+                    iconColor = extra.green,
                     title = "Auto-backup",
                     subtitle = "Automatically backup when tokens change",
                     checked = state.autoBackupEnabled,
                     onCheckedChange = viewModel::onAutoBackupToggle,
                 )
-
+                GroupDivider()
                 SettingsItem(
                     icon = Icons.Default.Restore,
+                    iconColor = extra.indigo,
                     title = "Restore from Backup",
                     subtitle = "Import accounts from a backup file",
                     onClick = viewModel::onShowRestoreDialog,
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Appearance section
             SectionHeader("Appearance")
-            SettingsCard {
-                // Theme mode selector
-                ThemeModeSelector(
-                    themeMode = state.themeMode,
-                    onThemeModeChange = viewModel::onThemeModeChange,
+            GroupCard {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+                ) {
+                    IconTile(icon = Icons.Default.DarkMode, color = extra.indigo)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Theme", style = MaterialTheme.typography.bodyLarge)
+                }
+                SegmentedControl(
+                    options = listOf("system" to "System", "light" to "Light", "dark" to "Dark"),
+                    selected = state.themeMode,
+                    onSelect = viewModel::onThemeModeChange,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                 )
-
+                GroupDivider()
                 SettingsToggleItem(
                     icon = Icons.Default.Contrast,
+                    iconColor = extra.gray,
                     title = "Pitch Black",
                     subtitle = "AMOLED-friendly pure black theme",
                     checked = state.pitchBlack,
@@ -194,73 +218,83 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Behavior section
             SectionHeader("Behavior")
-            SettingsCard {
+            GroupCard {
                 SettingsToggleItem(
                     icon = Icons.Default.Screenshot,
+                    iconColor = extra.pink,
                     title = "Allow Screenshots",
                     subtitle = "Allow capturing screenshots of the app. Requires the app to be re-opened",
                     checked = state.allowScreenshots,
                     onCheckedChange = viewModel::onAllowScreenshotsToggle,
                 )
-
-            SettingsToggleItem(
-                icon = Icons.Default.Visibility,
-                title = "Tap to Reveal Codes",
-                subtitle = "Codes are hidden until tapped (${state.revealTimeoutSeconds}s timeout)",
-                checked = state.tapToReveal,
-                onCheckedChange = viewModel::onTapToRevealToggle,
-            )
-
-            SettingsToggleItem(
-                icon = Icons.Default.ContentCopy,
-                title = "Tap to Copy Code",
-                subtitle = "Tap a token to copy code to clipboard",
-                checked = state.tapToCopy,
-                onCheckedChange = viewModel::onTapToCopyToggle,
-            )
-
-            SettingsToggleItem(
-                icon = Icons.Default.Highlight,
-                title = "Highlight Token on Tap",
-                subtitle = "1st tap highlights, 2nd tap copies",
-                checked = state.highlightOnTap,
-                onCheckedChange = viewModel::onHighlightOnTapToggle,
-            )
-
-            SettingsItem(
-                icon = Icons.Default.Schedule,
-                title = "Password Reminder",
-                subtitle = "Require password every ${state.passwordReminderDays} days",
-                onClick = {
-                    // Cycle between 7, 15, 30
-                    val next = when (state.passwordReminderDays) {
-                        7 -> 15
-                        15 -> 30
-                        else -> 7
-                    }
-                    viewModel.onPasswordReminderDaysChange(next)
-                },
-            )
+                GroupDivider()
+                SettingsToggleItem(
+                    icon = Icons.Default.Visibility,
+                    iconColor = extra.teal,
+                    title = "Tap to Reveal Codes",
+                    subtitle = "Codes are hidden until tapped (${state.revealTimeoutSeconds}s timeout)",
+                    checked = state.tapToReveal,
+                    onCheckedChange = viewModel::onTapToRevealToggle,
+                )
+                GroupDivider()
+                SettingsToggleItem(
+                    icon = Icons.Default.ContentCopy,
+                    iconColor = accent,
+                    title = "Tap to Copy Code",
+                    subtitle = "Tap a token to copy code to clipboard",
+                    checked = state.tapToCopy,
+                    onCheckedChange = viewModel::onTapToCopyToggle,
+                )
+                GroupDivider()
+                SettingsToggleItem(
+                    icon = Icons.Default.Highlight,
+                    iconColor = extra.orange,
+                    title = "Highlight Token on Tap",
+                    subtitle = "1st tap highlights, 2nd tap copies",
+                    checked = state.highlightOnTap,
+                    onCheckedChange = viewModel::onHighlightOnTapToggle,
+                )
+                GroupDivider()
+                SettingsItem(
+                    icon = Icons.Default.Schedule,
+                    iconColor = extra.red,
+                    title = "Password Reminder",
+                    subtitle = "Ask for the password periodically",
+                    value = "${state.passwordReminderDays} days",
+                    cycles = true,
+                    onClick = {
+                        // Cycle between 7, 15, 30
+                        val next = when (state.passwordReminderDays) {
+                            7 -> 15
+                            15 -> 30
+                            else -> 7
+                        }
+                        viewModel.onPasswordReminderDaysChange(next)
+                    },
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // About section
             SectionHeader("About")
-            SettingsCard {
+            GroupCard {
                 SettingsItem(
                     icon = Icons.Default.Info,
+                    iconColor = extra.gray,
                     title = "VaultSpec Authenticator",
-                    subtitle = "Version ${context.packageManager.getPackageInfo(context.packageName, 0).versionName} — Local encrypted TOTP vault",
-                    onClick = {},
+                    subtitle = "Local encrypted TOTP vault",
+                    value = context.packageManager.getPackageInfo(context.packageName, 0).versionName,
+                    onClick = null,
                 )
-
+                GroupDivider()
                 SettingsItem(
                     icon = Icons.Default.Policy,
+                    iconColor = accent,
                     title = "Privacy Policy",
                     subtitle = "View our privacy policy",
                     onClick = {
@@ -270,213 +304,81 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 
     // Change Password Dialog
     if (state.showChangePassword) {
-        val dialogInputColors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
-            cursorColor = MaterialTheme.colorScheme.primary,
-            focusedLabelColor = MaterialTheme.colorScheme.primary,
-        )
-        AlertDialog(
-            onDismissRequest = viewModel::onDismissChangePassword,
-            shape = RoundedCornerShape(16.dp),
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = {
-                Text(
-                    "Change Password",
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = state.newPassword,
-                        onValueChange = viewModel::onNewPasswordChange,
-                        label = { Text("New Password") },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = dialogInputColors,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
-                        value = state.confirmNewPassword,
-                        onValueChange = viewModel::onConfirmNewPasswordChange,
-                        label = { Text("Confirm New Password") },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = dialogInputColors,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    state.error?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = viewModel::onChangePassword,
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Text("Change", fontWeight = FontWeight.SemiBold)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = viewModel::onDismissChangePassword,
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Text("Cancel")
-                }
-            },
-        )
+        VaultDialog(
+            title = "Change Password",
+            confirmText = "Change",
+            onConfirm = viewModel::onChangePassword,
+            onDismiss = viewModel::onDismissChangePassword,
+        ) {
+            VaultTextField(
+                value = state.newPassword,
+                onValueChange = viewModel::onNewPasswordChange,
+                label = "New Password",
+                isPassword = true,
+                onSurface = true,
+            )
+            VaultTextField(
+                value = state.confirmNewPassword,
+                onValueChange = viewModel::onConfirmNewPasswordChange,
+                label = "Confirm New Password",
+                isPassword = true,
+                onSurface = true,
+            )
+            state.error?.let { ErrorText(it) }
+        }
     }
 
     // Backup Password Dialog
     if (state.showBackupPasswordDialog) {
-        AlertDialog(
-            onDismissRequest = viewModel::onDismissBackupPasswordDialog,
-            shape = RoundedCornerShape(16.dp),
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = {
-                Text(
-                    "Set Backup Password",
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        "This password will be used to encrypt your backups. You'll need it to restore.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    OutlinedTextField(
-                        value = state.backupPassword,
-                        onValueChange = viewModel::onBackupPasswordChange,
-                        label = { Text("Backup Password") },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
-                            cursorColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    state.error?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = viewModel::onSaveBackupPassword,
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Text("Save", fontWeight = FontWeight.SemiBold)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = viewModel::onDismissBackupPasswordDialog,
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Text("Cancel")
-                }
-            },
-        )
+        VaultDialog(
+            title = "Set Backup Password",
+            message = "This password will be used to encrypt your backups. You'll need it to restore.",
+            confirmText = "Save",
+            onConfirm = viewModel::onSaveBackupPassword,
+            onDismiss = viewModel::onDismissBackupPasswordDialog,
+        ) {
+            VaultTextField(
+                value = state.backupPassword,
+                onValueChange = viewModel::onBackupPasswordChange,
+                label = "Backup Password",
+                isPassword = true,
+                onSurface = true,
+            )
+            state.error?.let { ErrorText(it) }
+        }
     }
 
     // Restore Dialog
     if (state.showRestoreDialog) {
-        AlertDialog(
-            onDismissRequest = viewModel::onDismissRestoreDialog,
-            shape = RoundedCornerShape(16.dp),
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = {
-                Text(
-                    "Restore from Backup",
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(
-                        "This will replace all current accounts with the backup data.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFFC93131),
-                    )
-                    OutlinedButton(
-                        onClick = { filePickerLauncher.launch(arrayOf("*/*")) },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                    ) {
-                        Icon(Icons.Default.FileOpen, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            if (state.restoreFileUri != null) "File selected ✓"
-                            else "Select backup file (.vsbk)"
-                        )
-                    }
-                    OutlinedTextField(
-                        value = state.restorePassword,
-                        onValueChange = viewModel::onRestorePasswordChange,
-                        label = { Text("Backup Password") },
-                        singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.12f),
-                            cursorColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary,
-                        ),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    state.error?.let {
-                        Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.onRestore(context) },
-                    enabled = !state.isLoading,
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                    } else {
-                        Text("Restore", fontWeight = FontWeight.SemiBold)
-                    }
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = viewModel::onDismissRestoreDialog,
-                    shape = RoundedCornerShape(12.dp),
-                ) {
-                    Text("Cancel")
-                }
-            },
-        )
+        VaultDialog(
+            title = "Restore from Backup",
+            message = "This will replace all current accounts with the backup data.",
+            confirmText = "Restore",
+            destructive = true,
+            loading = state.isLoading,
+            onConfirm = { viewModel.onRestore(context) },
+            onDismiss = viewModel::onDismissRestoreDialog,
+        ) {
+            TintedButton(
+                text = if (state.restoreFileUri != null) "File Selected" else "Select Backup File",
+                icon = if (state.restoreFileUri != null) Icons.Default.CheckCircle else Icons.Default.FileOpen,
+                onClick = { filePickerLauncher.launch(arrayOf("*/*")) },
+            )
+            VaultTextField(
+                value = state.restorePassword,
+                onValueChange = viewModel::onRestorePasswordChange,
+                label = "Backup Password",
+                isPassword = true,
+                onSurface = true,
+            )
+            state.error?.let { ErrorText(it) }
+        }
     }
 
     // Biometric enrollment via BiometricPrompt
@@ -509,203 +411,114 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun ThemeModeSelector(
-    themeMode: String,
-    onThemeModeChange: (String) -> Unit,
+private fun SettingsRow(
+    icon: ImageVector,
+    iconColor: Color,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    trailing: @Composable RowScope.() -> Unit,
 ) {
-    Surface(modifier = Modifier.fillMaxWidth(), color = Color.Transparent) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.DarkMode,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp),
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "Theme",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    when (themeMode) {
-                        "light" -> "Light"
-                        "dark" -> "Dark"
-                        else -> "System default"
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
     Row(
-        modifier = Modifier
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+            .heightIn(min = 60.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
-        listOf("system" to "System", "light" to "Light", "dark" to "Dark").forEach { (mode, label) ->
-            FilterChip(
-                selected = themeMode == mode,
-                onClick = { onThemeModeChange(mode) },
-                label = {
-                    Text(
-                        label,
-                        fontWeight = if (themeMode == mode) FontWeight.SemiBold else FontWeight.Normal,
-                    )
-                },
-                shape = RoundedCornerShape(10.dp),
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    selectedLabelColor = MaterialTheme.colorScheme.primary,
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-                border = if (themeMode == mode)
-                    FilterChipDefaults.filterChipBorder(
-                        enabled = true,
-                        selected = true,
-                        selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                    )
-                else FilterChipDefaults.filterChipBorder(
-                    enabled = true,
-                    selected = false,
-                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                ),
-                modifier = Modifier.weight(1f),
+        IconTile(
+            icon = icon,
+            color = iconColor,
+            modifier = Modifier.alpha(if (enabled) 1f else 0.4f),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .alpha(if (enabled) 1f else 0.4f),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-@Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
-    )
-}
-
-@Composable
-private fun SettingsCard(
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val extra = LocalVaultSpecColors.current
-    OutlinedCard(
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, extra.cardBorder),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(content = content)
+        Spacer(modifier = Modifier.width(12.dp))
+        trailing()
     }
 }
 
 @Composable
 private fun SettingsItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
+    iconColor: Color,
     title: String,
     subtitle: String,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
+    value: String? = null,
+    cycles: Boolean = false,
 ) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.Transparent,
+    val extra = LocalVaultSpecColors.current
+    SettingsRow(
+        icon = icon,
+        iconColor = iconColor,
+        title = title,
+        subtitle = subtitle,
+        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp),
+        if (value != null) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+        }
+        if (onClick != null) {
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = if (cycles) Icons.Default.UnfoldMore else Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = extra.tertiaryLabel,
+                modifier = Modifier.size(20.dp),
+            )
         }
     }
 }
 
 @Composable
 private fun SettingsToggleItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
+    iconColor: Color,
     title: String,
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     enabled: Boolean = true,
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.Transparent,
+    SettingsRow(
+        icon = icon,
+        iconColor = iconColor,
+        title = title,
+        subtitle = subtitle,
+        enabled = enabled,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
-                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                modifier = Modifier.size(24.dp),
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = if (enabled) MaterialTheme.colorScheme.onSurface
-                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                )
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                )
-            }
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-                enabled = enabled,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                    checkedBorderColor = MaterialTheme.colorScheme.primary,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
-                    uncheckedBorderColor = MaterialTheme.colorScheme.outline,
-                ),
-            )
-        }
+        VaultSwitch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            enabled = enabled,
+        )
     }
 }
 
 private fun formatTimeout(seconds: Int): String = when (seconds) {
     0 -> "Immediately"
-    60 -> "1 minute"
-    120 -> "2 minutes"
-    300 -> "5 minutes"
-    600 -> "10 minutes"
-    900 -> "15 minutes"
-    else -> "${seconds / 60} minutes"
+    60 -> "1 min"
+    else -> "${seconds / 60} min"
 }

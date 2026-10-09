@@ -37,7 +37,7 @@ class MainActivity : FragmentActivity() {
         if (themeModeAtLaunch == "dark") {
             window.decorView.setBackgroundColor(
                 if (isPitchBlackAtLaunch) android.graphics.Color.BLACK
-                else android.graphics.Color.parseColor("#0F0F0F")
+                else android.graphics.Color.parseColor("#1C1C1E")
             )
         }
 
@@ -62,8 +62,8 @@ class MainActivity : FragmentActivity() {
                 window.decorView.setBackgroundColor(
                     when {
                         isDarkMode && isPitchBlack -> android.graphics.Color.BLACK
-                        isDarkMode -> android.graphics.Color.parseColor("#0F0F0F")
-                        else -> android.graphics.Color.parseColor("#F5F7FA")
+                        isDarkMode -> android.graphics.Color.parseColor("#1C1C1E")
+                        else -> android.graphics.Color.parseColor("#F2F2F7")
                     }
                 )
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)

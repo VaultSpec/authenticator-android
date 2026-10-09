@@ -1,10 +1,17 @@
 package com.vaultspec.authenticator.ui.navigation
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.IntOffset
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -57,9 +64,30 @@ fun NavGraph(
         }
     }
 
+    // Pushed screens slide in over their parent; everything else cross-fades
+    val pushed = setOf(Routes.ADD_ACCOUNT, Routes.SETTINGS, Routes.QR_SCANNER)
+    val slide = tween<IntOffset>(durationMillis = 350, easing = FastOutSlowInEasing)
+    val fade = tween<Float>(durationMillis = 250)
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
+        enterTransition = {
+            if (targetState.destination.route in pushed) slideInHorizontally(slide) { it }
+            else fadeIn(fade)
+        },
+        exitTransition = {
+            if (targetState.destination.route in pushed) slideOutHorizontally(slide) { -it / 4 } + fadeOut(fade)
+            else fadeOut(fade)
+        },
+        popEnterTransition = {
+            if (initialState.destination.route in pushed) slideInHorizontally(slide) { -it / 4 } + fadeIn(fade)
+            else fadeIn(fade)
+        },
+        popExitTransition = {
+            if (initialState.destination.route in pushed) slideOutHorizontally(slide) { it }
+            else fadeOut(fade)
+        },
     ) {
         composable(Routes.SPLASH) {
             SplashScreen(

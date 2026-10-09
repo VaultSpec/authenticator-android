@@ -1,5 +1,10 @@
 package com.vaultspec.authenticator.ui.screen.onboarding
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.runtime.getValue
+import com.vaultspec.authenticator.ui.component.PlainButton
+import com.vaultspec.authenticator.ui.component.PrimaryButton
+import com.vaultspec.authenticator.ui.theme.VaultSpecDimens
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -21,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -106,6 +112,7 @@ fun OnboardingScreen(
     val pagerState = rememberPagerState(pageCount = { PAGES.size })
     val scope = rememberCoroutineScope()
     val extra = LocalVaultSpecColors.current
+    val isLastPage = pagerState.currentPage == PAGES.size - 1
 
     Box(
         modifier = Modifier
@@ -113,9 +120,24 @@ fun OnboardingScreen(
             .background(MaterialTheme.colorScheme.background),
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // Skip — top trailing, hidden on the last page
+            Box(
+                contentAlignment = Alignment.CenterEnd,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .padding(horizontal = 8.dp),
+            ) {
+                if (!isLastPage) {
+                    PlainButton(text = "Skip", onClick = onComplete)
+                }
+            }
+
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.weight(1f),
@@ -131,7 +153,8 @@ fun OnboardingScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 40.dp),
+                    .padding(horizontal = VaultSpecDimens.ScreenPadding)
+                    .padding(top = 16.dp, bottom = 24.dp),
             ) {
                 // Dots
                 Row(
@@ -140,97 +163,35 @@ fun OnboardingScreen(
                 ) {
                     repeat(PAGES.size) { index ->
                         val isActive = pagerState.currentPage == index
+                        val dotColor by animateColorAsState(
+                            targetValue = if (isActive) MaterialTheme.colorScheme.onBackground
+                                else extra.tertiaryLabel,
+                            label = "dot",
+                        )
                         Box(
                             modifier = Modifier
                                 .padding(horizontal = 4.dp)
-                                .size(
-                                    width = if (isActive) 24.dp else 8.dp,
-                                    height = 8.dp,
-                                )
+                                .size(8.dp)
                                 .clip(CircleShape)
-                                .background(
-                                    if (isActive) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.outlineVariant
-                                ),
+                                .background(dotColor),
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
-                if (pagerState.currentPage == PAGES.size - 1) {
-                    // Last page: CTA button
-                    val buttonShape = RoundedCornerShape(12.dp)
-                    Button(
-                        onClick = onComplete,
-                        shape = buttonShape,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Transparent,
-                        ),
-                        contentPadding = PaddingValues(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(
-                                            extra.unlockGradientTop,
-                                            extra.unlockGradientBottom,
-                                        ),
-                                    ),
-                                    shape = buttonShape,
-                                ),
-                        ) {
-                            Text(
-                                "Get Started",
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 16.sp,
-                                color = Color.White,
-                                letterSpacing = 0.3.sp,
-                            )
-                        }
-                    }
-                } else {
-                    // Not last page: Next + Skip
-                    Button(
-                        onClick = {
+                PrimaryButton(
+                    text = if (isLastPage) "Get Started" else "Continue",
+                    onClick = {
+                        if (isLastPage) {
+                            onComplete()
+                        } else {
                             scope.launch {
                                 pagerState.animateScrollToPage(pagerState.currentPage + 1)
                             }
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp),
-                    ) {
-                        Text(
-                            "Continue",
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 16.sp,
-                            letterSpacing = 0.2.sp,
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    TextButton(onClick = onComplete) {
-                        Text(
-                            "Skip",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Normal,
-                            fontSize = 14.sp,
-                        )
-                    }
-                }
+                        }
+                    },
+                )
             }
         }
     }
@@ -266,10 +227,7 @@ private fun OnboardingPageContent(
 
         Text(
             text = data.headline,
-            style = MaterialTheme.typography.headlineLarge.copy(
-                fontSize = 26.sp,
-                lineHeight = 32.sp,
-            ),
+            style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
         )
@@ -278,10 +236,7 @@ private fun OnboardingPageContent(
 
         Text(
             text = data.subtext,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontSize = 15.sp,
-                lineHeight = 22.sp,
-            ),
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )

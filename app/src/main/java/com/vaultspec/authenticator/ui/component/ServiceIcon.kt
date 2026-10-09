@@ -3,7 +3,7 @@ package com.vaultspec.authenticator.ui.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -150,7 +150,7 @@ private val serviceDomains: Map<String, String> = mapOf(
 fun ServiceIcon(
     issuer: String,
     modifier: Modifier = Modifier,
-    size: Dp = 40.dp,
+    size: Dp = 44.dp,
 ) {
     val lowerIssuer = issuer.lowercase().trim()
     val domain = serviceDomains.entries.firstOrNull { lowerIssuer.contains(it.key) }?.value
@@ -168,7 +168,8 @@ fun ServiceIcon(
             error = { LetterFallback(issuer, size) },
             modifier = modifier
                 .size(size)
-                .clip(CircleShape)
+                .clip(RoundedCornerShape(size * 0.26f))
+                .background(Color.White)
         )
     } else {
         // Try favicon from issuer as domain directly
@@ -185,7 +186,8 @@ fun ServiceIcon(
             error = { LetterFallback(issuer, size) },
             modifier = modifier
                 .size(size)
-                .clip(CircleShape)
+                .clip(RoundedCornerShape(size * 0.26f))
+                .background(Color.White)
         )
     }
 }
@@ -198,14 +200,14 @@ private fun LetterFallback(issuer: String, size: Dp) {
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(size)
-            .clip(CircleShape)
+            .clip(RoundedCornerShape(size * 0.26f))
             .background(bgColor)
     ) {
         Text(
             text = letter,
             color = Color.White,
             fontSize = (size.value * 0.45f).sp,
-            fontWeight = FontWeight.Bold,
+            fontWeight = FontWeight.SemiBold,
         )
     }
 }

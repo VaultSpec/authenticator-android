@@ -15,73 +15,37 @@ val Inter = FontFamily(
     Font(R.font.inter_bold, FontWeight.Bold),
 )
 
+private fun style(size: Int, line: Int, weight: FontWeight, tracking: Double = 0.0) = TextStyle(
+    fontFamily = Inter,
+    fontWeight = weight,
+    fontSize = size.sp,
+    lineHeight = line.sp,
+    letterSpacing = tracking.sp,
+)
+
 val VaultSpecTypography = Typography(
-    headlineLarge = TextStyle(
-        fontFamily = Inter,
-        fontWeight = FontWeight.Bold,
-        fontSize = 28.sp,
-        lineHeight = 34.sp,
-        letterSpacing = (-0.5).sp,
-    ),
-    headlineMedium = TextStyle(
-        fontFamily = Inter,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = (-0.3).sp,
-    ),
-    titleLarge = TextStyle(
-        fontFamily = Inter,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        lineHeight = 26.sp,
-        letterSpacing = (-0.2).sp,
-    ),
-    titleMedium = TextStyle(
-        fontFamily = Inter,
-        fontWeight = FontWeight.Medium,
-        fontSize = 16.sp,
-        lineHeight = 22.sp,
-        letterSpacing = 0.1.sp,
-    ),
-    bodyLarge = TextStyle(
-        fontFamily = Inter,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 22.sp,
-    ),
-    bodyMedium = TextStyle(
-        fontFamily = Inter,
-        fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-    ),
-    bodySmall = TextStyle(
-        fontFamily = Inter,
-        fontWeight = FontWeight.Normal,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-    ),
-    labelLarge = TextStyle(
-        fontFamily = Inter,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.1.sp,
-    ),
-    // Used for TOTP code display
-    displayMedium = TextStyle(
-        fontFamily = Inter,
-        fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        lineHeight = 38.sp,
-        letterSpacing = 5.sp,
-    ),
-    labelSmall = TextStyle(
-        fontFamily = Inter,
-        fontWeight = FontWeight.Normal,
-        fontSize = 11.sp,
-        lineHeight = 14.sp,
-        letterSpacing = 0.2.sp,
-    ),
+    // TOTP code
+    displayMedium = style(30, 36, FontWeight.SemiBold, 1.0),
+    // Large title
+    displaySmall = style(34, 41, FontWeight.Bold, -0.6),
+    // Title 1
+    headlineLarge = style(28, 34, FontWeight.Bold, -0.5),
+    // Title 2
+    headlineMedium = style(22, 28, FontWeight.Bold, -0.4),
+    // Title 3
+    headlineSmall = style(20, 25, FontWeight.SemiBold, -0.3),
+    titleLarge = style(20, 25, FontWeight.SemiBold, -0.3),
+    // Headline
+    titleMedium = style(17, 22, FontWeight.SemiBold, -0.3),
+    titleSmall = style(15, 20, FontWeight.SemiBold, -0.2),
+    // Body
+    bodyLarge = style(17, 22, FontWeight.Normal, -0.3),
+    // Subheadline
+    bodyMedium = style(15, 20, FontWeight.Normal, -0.2),
+    // Footnote
+    bodySmall = style(13, 18, FontWeight.Normal, -0.1),
+    labelLarge = style(15, 20, FontWeight.Medium, -0.2),
+    labelMedium = style(13, 18, FontWeight.Medium, -0.1),
+    // Caption
+    labelSmall = style(12, 16, FontWeight.Normal),
 )

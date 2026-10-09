@@ -1,5 +1,22 @@
 package com.vaultspec.authenticator.ui.screen.scanner
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import com.vaultspec.authenticator.ui.component.CircleIconButton
+import com.vaultspec.authenticator.ui.component.GrayButton
+import com.vaultspec.authenticator.ui.component.HeroIcon
+import com.vaultspec.authenticator.ui.component.PrimaryButton
+import com.vaultspec.authenticator.ui.theme.VaultSpecDimens
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
@@ -139,29 +156,58 @@ private fun CameraPreview(
             modifier = Modifier.fillMaxSize(),
         )
 
-        // Back button overlay
-        IconButton(
-            onClick = onNavigateBack,
+        // Dimmed scrim with a rounded viewfinder cutout
+        Canvas(
             modifier = Modifier
-                .padding(16.dp)
-                .align(Alignment.TopStart),
+                .fillMaxSize()
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
         ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = MaterialTheme.colorScheme.onPrimary,
+            val side = size.minDimension * 0.7f
+            val topLeft = Offset((size.width - side) / 2f, (size.height - side) / 2f)
+            val frame = androidx.compose.ui.geometry.Size(side, side)
+            val radius = CornerRadius(28.dp.toPx())
+            drawRect(Color.Black.copy(alpha = 0.55f))
+            drawRoundRect(
+                color = Color.Transparent,
+                topLeft = topLeft,
+                size = frame,
+                cornerRadius = radius,
+                blendMode = BlendMode.Clear,
+            )
+            drawRoundRect(
+                color = Color.White,
+                topLeft = topLeft,
+                size = frame,
+                cornerRadius = radius,
+                style = Stroke(width = 3.dp.toPx()),
             )
         }
+
+        // Back button overlay
+        CircleIconButton(
+            icon = Icons.Default.ArrowBackIosNew,
+            contentDescription = "Back",
+            onClick = onNavigateBack,
+            tint = Color.White,
+            containerColor = Color.Black.copy(alpha = 0.45f),
+            modifier = Modifier
+                .statusBarsPadding()
+                .padding(horizontal = VaultSpecDimens.ScreenPadding, vertical = 8.dp)
+                .align(Alignment.TopStart),
+        )
 
         // Instruction overlay
         Text(
             text = "Point camera at QR code",
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onPrimary,
+            style = MaterialTheme.typography.titleSmall,
+            color = Color.White,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp),
+                .navigationBarsPadding()
+                .padding(bottom = 64.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.45f))
+                .padding(horizontal = 18.dp, vertical = 10.dp),
         )
     }
 }
@@ -174,21 +220,19 @@ private fun PermissionRequest(onNavigateBack: () -> Unit, permanentlyDenied: Boo
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .background(MaterialTheme.colorScheme.background)
+            .systemBarsPadding()
+            .padding(horizontal = 32.dp, vertical = 24.dp)
     ) {
-        Icon(
-            imageVector = Icons.Default.CameraAlt,
-            contentDescription = null,
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(modifier = Modifier.height(16.dp))
+        HeroIcon(icon = Icons.Default.CameraAlt)
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
-            text = "Camera Permission Required",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
+            text = "Camera Access Needed",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = if (permanentlyDenied)
                 "Camera permission was denied. Please grant it in app settings to scan QR codes."
@@ -198,20 +242,19 @@ private fun PermissionRequest(onNavigateBack: () -> Unit, permanentlyDenied: Boo
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
         if (permanentlyDenied) {
-            Button(onClick = {
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", context.packageName, null)
-                }
-                context.startActivity(intent)
-            }) {
-                Text("Open Settings")
-            }
-            Spacer(modifier = Modifier.height(12.dp))
+            PrimaryButton(
+                text = "Open Settings",
+                onClick = {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.fromParts("package", context.packageName, null)
+                    }
+                    context.startActivity(intent)
+                },
+            )
+            Spacer(modifier = Modifier.height(10.dp))
         }
-        OutlinedButton(onClick = onNavigateBack) {
-            Text("Go Back")
-        }
+        GrayButton(text = "Go Back", onClick = onNavigateBack, onSurface = false)
     }
 }

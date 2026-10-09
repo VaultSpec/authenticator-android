@@ -20,18 +20,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.vaultspec.authenticator.ui.theme.RingBackground
-import com.vaultspec.authenticator.ui.theme.RingProgress
+import com.vaultspec.authenticator.ui.theme.LocalVaultSpecColors
 
 @Composable
 fun CountdownIndicator(
     secondsRemaining: Int,
     totalSeconds: Int,
     modifier: Modifier = Modifier,
-    size: Dp = 42.dp,
-    strokeWidth: Dp = 3.5.dp,
-    progressColor: Color = RingProgress,
-    backgroundColor: Color = RingBackground,
+    size: Dp = 32.dp,
+    strokeWidth: Dp = 3.dp,
+    progressColor: Color = MaterialTheme.colorScheme.primary,
+    backgroundColor: Color = LocalVaultSpecColors.current.fillOnSurface,
     textColor: Color = progressColor,
 ) {
     val progress by animateFloatAsState(
@@ -57,16 +56,22 @@ fun CountdownIndicator(
         modifier = modifier.size(size)
     ) {
         Canvas(modifier = Modifier.size(size)) {
-            val stroke = Stroke(
-                width = strokeWidth.toPx(),
-                cap = StrokeCap.Round
+            val strokePx = strokeWidth.toPx()
+            val stroke = Stroke(width = strokePx, cap = StrokeCap.Round)
+            val inset = strokePx / 2f
+            val arcSize = androidx.compose.ui.geometry.Size(
+                this.size.width - strokePx,
+                this.size.height - strokePx,
             )
+            val topLeft = androidx.compose.ui.geometry.Offset(inset, inset)
             // Background ring
             drawArc(
                 color = backgroundColor,
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
                 style = stroke,
             )
             // Progress ring
@@ -75,14 +80,17 @@ fun CountdownIndicator(
                 startAngle = -90f,
                 sweepAngle = 360f * progress,
                 useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
                 style = stroke,
             )
         }
         Text(
             text = "$secondsRemaining",
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.SemiBold,
+                fontSize = if (size >= 40.dp) 13.sp else 11.sp,
+                fontFeatureSettings = "tnum",
             ),
             color = animatedTextColor,
         )

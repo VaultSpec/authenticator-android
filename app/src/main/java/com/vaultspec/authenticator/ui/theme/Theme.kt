@@ -1,146 +1,155 @@
 package com.vaultspec.authenticator.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 
-// Custom extras that M3 colorScheme doesn't cover
+// Semantic colors that M3 colorScheme doesn't cover
 data class VaultSpecExtraColors(
-    val cardBlue: Color,
-    val cardWhite: Color,
-    val cardBorder: Color,
-    val textOnBlue: Color,
-    val ringBackground: Color,
-    val ringProgress: Color,
-    val urgencyWarning: Color,
-    val urgencyDanger: Color,
-    val categorySelected: Color,
-    val categoryUnselected: Color,
-    val unlockGradientTop: Color,
-    val unlockGradientBottom: Color,
+    val fill: Color,           // controls on the page background
+    val fillOnSurface: Color,  // controls on a card / dialog / sheet
+    val separator: Color,
+    val tertiaryLabel: Color,
+    val codeText: Color,       // TOTP digits
+    val switchOff: Color,
+    val segmentThumb: Color,
+    val green: Color,
+    val orange: Color,
+    val red: Color,
+    val indigo: Color,
+    val teal: Color,
+    val pink: Color,
+    val gray: Color,
 )
 
-val LocalVaultSpecColors = staticCompositionLocalOf {
-    VaultSpecExtraColors(
-        cardBlue = CardBlue,
-        cardWhite = CardWhite,
-        cardBorder = CardBorder,
-        textOnBlue = TextOnBlue,
-        ringBackground = RingBackground,
-        ringProgress = RingProgress,
-        urgencyWarning = UrgencyWarning,
-        urgencyDanger = UrgencyDanger,
-        categorySelected = CategorySelected,
-        categoryUnselected = CategoryUnselected,
-        unlockGradientTop = UnlockGradientTopLight,
-        unlockGradientBottom = UnlockGradientBottomLight,
-    )
+// Corner radii and metrics shared by every screen
+object VaultSpecDimens {
+    val ScreenPadding = 20.dp
+    val ControlHeight = 52.dp
+    val CardShape = RoundedCornerShape(20.dp)
+    val GroupShape = RoundedCornerShape(16.dp)
+    val ControlShape = RoundedCornerShape(14.dp)
+    val DialogShape = RoundedCornerShape(24.dp)
 }
 
-private val LightColorScheme = lightColorScheme(
-    primary = Blue500,
-    onPrimary = White,
-    primaryContainer = Blue100,
-    onPrimaryContainer = Blue600,
-    secondary = CategorySelected,
-    onSecondary = White,
-    secondaryContainer = GraySurface,
-    onSecondaryContainer = TextPrimary,
-    surface = White,
-    onSurface = TextPrimary,
-    surfaceVariant = GraySurface,
-    onSurfaceVariant = TextSecondary,
-    background = GrayBackground,
-    onBackground = TextPrimary,
-    outline = GrayLight,
-    outlineVariant = GrayLight,
-)
-
 private val LightExtraColors = VaultSpecExtraColors(
-    cardBlue = CardBlue,
-    cardWhite = CardWhite,
-    cardBorder = CardBorder,
-    textOnBlue = TextOnBlue,
-    ringBackground = RingBackground,
-    ringProgress = RingProgress,
-    urgencyWarning = UrgencyWarning,
-    urgencyDanger = UrgencyDanger,
-    categorySelected = CategorySelected,
-    categoryUnselected = CategoryUnselected,
-    unlockGradientTop = UnlockGradientTopLight,
-    unlockGradientBottom = UnlockGradientBottomLight,
-)
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Blue400,
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Blue600,
-    onPrimaryContainer = Blue100,
-    secondary = DarkCategorySelected,
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = DarkSurfaceVariant,
-    onSecondaryContainer = DarkTextPrimary,
-    surface = DarkSurface,
-    onSurface = DarkTextPrimary,
-    surfaceVariant = DarkSurfaceVariant,
-    onSurfaceVariant = DarkTextSecondary,
-    background = DarkBackground,
-    onBackground = DarkTextPrimary,
-    outline = DarkGrayLight,
-    outlineVariant = DarkCardBorder,
+    fill = LightFill,
+    fillOnSurface = LightFillOnSurface,
+    separator = LightSeparator,
+    tertiaryLabel = LightTertiaryLabel,
+    codeText = LightLabel,
+    switchOff = Color(0xFFE3E3E8),
+    segmentThumb = Color.White,
+    green = GreenLight,
+    orange = OrangeLight,
+    red = RedLight,
+    indigo = IndigoLight,
+    teal = TealLight,
+    pink = PinkLight,
+    gray = GrayLight,
 )
 
 private val DarkExtraColors = VaultSpecExtraColors(
-    cardBlue = Blue500,
-    cardWhite = DarkCardWhite,
-    cardBorder = DarkCardBorder,
-    textOnBlue = TextOnBlue,
-    ringBackground = DarkRingBackground,
-    ringProgress = Blue400,
-    urgencyWarning = UrgencyWarning,
-    urgencyDanger = UrgencyDanger,
-    categorySelected = DarkCategorySelected,
-    categoryUnselected = DarkCategoryUnselected,
-    unlockGradientTop = UnlockGradientTopDark,
-    unlockGradientBottom = UnlockGradientBottomDark,
+    fill = DarkFill,
+    fillOnSurface = DarkFillOnSurface,
+    separator = DarkSeparator,
+    tertiaryLabel = DarkTertiaryLabel,
+    codeText = CodeAmberDark,
+    switchOff = Color(0xFF48484A),
+    segmentThumb = Color(0xFF636366),
+    green = GreenDark,
+    orange = OrangeDark,
+    red = RedDark,
+    indigo = IndigoDark,
+    teal = TealDark,
+    pink = PinkDark,
+    gray = GrayDark,
 )
 
-private val PitchBlackColorScheme = darkColorScheme(
-    primary = Blue400,
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Blue600,
-    onPrimaryContainer = Blue100,
-    secondary = DarkCategorySelected,
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = PitchBlackSurfaceVariant,
-    onSecondaryContainer = DarkTextPrimary,
-    surface = PitchBlackSurface,
-    onSurface = DarkTextPrimary,
-    surfaceVariant = PitchBlackSurfaceVariant,
-    onSurfaceVariant = DarkTextSecondary,
+private val PitchBlackExtraColors = DarkExtraColors.copy(
+    fill = PitchBlackFill,
+    fillOnSurface = PitchBlackFillOnSurface,
+    separator = PitchBlackSeparator,
+)
+
+val LocalVaultSpecColors = staticCompositionLocalOf { LightExtraColors }
+
+private val LightColorScheme = lightColorScheme(
+    primary = AccentLight,
+    onPrimary = Color.White,
+    primaryContainer = AccentLight.copy(alpha = 0.12f),
+    onPrimaryContainer = AccentLight,
+    secondary = AccentLight,
+    onSecondary = Color.White,
+    secondaryContainer = LightFill,
+    onSecondaryContainer = LightLabel,
+    surface = LightSurface,
+    onSurface = LightLabel,
+    surfaceVariant = LightFillOnSurface,
+    onSurfaceVariant = LightSecondaryLabel,
+    surfaceContainerLowest = LightSurface,
+    surfaceContainerLow = LightSurface,
+    surfaceContainer = LightSurface,
+    surfaceContainerHigh = LightSurface,
+    surfaceContainerHighest = LightFillOnSurface,
+    background = LightBackground,
+    onBackground = LightLabel,
+    outline = LightSeparator,
+    outlineVariant = LightSeparator,
+    error = RedLight,
+    onError = Color.White,
+    scrim = Color.Black,
+)
+
+private fun darkScheme(
+    background: Color,
+    surface: Color,
+    fillOnSurface: Color,
+    separator: Color,
+) = darkColorScheme(
+    primary = AccentDark,
+    onPrimary = Color.White,
+    primaryContainer = AccentDark.copy(alpha = 0.18f),
+    onPrimaryContainer = AccentDark,
+    secondary = AccentDark,
+    onSecondary = Color.White,
+    secondaryContainer = fillOnSurface,
+    onSecondaryContainer = DarkLabel,
+    surface = surface,
+    onSurface = DarkLabel,
+    surfaceVariant = fillOnSurface,
+    onSurfaceVariant = DarkSecondaryLabel,
+    surfaceContainerLowest = surface,
+    surfaceContainerLow = surface,
+    surfaceContainer = surface,
+    surfaceContainerHigh = surface,
+    surfaceContainerHighest = fillOnSurface,
+    background = background,
+    onBackground = DarkLabel,
+    outline = separator,
+    outlineVariant = separator,
+    error = RedDark,
+    onError = Color.White,
+    scrim = Color.Black,
+)
+
+private val DarkColorScheme = darkScheme(
+    background = DarkBackground,
+    surface = DarkSurface,
+    fillOnSurface = DarkFillOnSurface,
+    separator = DarkSeparator,
+)
+
+private val PitchBlackColorScheme = darkScheme(
     background = PitchBlackBackground,
-    onBackground = DarkTextPrimary,
-    outline = PitchBlackGrayLight,
-    outlineVariant = PitchBlackCardBorder,
-)
-
-private val PitchBlackExtraColors = VaultSpecExtraColors(
-    cardBlue = Blue500,
-    cardWhite = PitchBlackCardWhite,
-    cardBorder = PitchBlackCardBorder,
-    textOnBlue = TextOnBlue,
-    ringBackground = PitchBlackRingBackground,
-    ringProgress = Blue400,
-    urgencyWarning = UrgencyWarning,
-    urgencyDanger = UrgencyDanger,
-    categorySelected = DarkCategorySelected,
-    categoryUnselected = PitchBlackCategoryUnselected,
-    unlockGradientTop = UnlockGradientTopDark,
-    unlockGradientBottom = UnlockGradientBottomDark,
+    surface = PitchBlackSurface,
+    fillOnSurface = PitchBlackFillOnSurface,
+    separator = PitchBlackSeparator,
 )
 
 @Composable

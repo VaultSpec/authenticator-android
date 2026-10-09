@@ -7,13 +7,14 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -21,10 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.vaultspec.authenticator.ui.theme.*
+import com.vaultspec.authenticator.ui.theme.LocalVaultSpecColors
+import com.vaultspec.authenticator.ui.theme.VaultSpecDimens
 
 @Composable
 fun TokenCard(
@@ -40,43 +41,41 @@ fun TokenCard(
     onTap: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val displayCode = if (isRevealed) formatCode(code) else "• • • • • •"
-
     val extra = LocalVaultSpecColors.current
-    val backgroundColor = extra.cardWhite
-    val contentColor = MaterialTheme.colorScheme.onSurface
-    val subtitleColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    // Urgency-aware ring colors
-    val urgencyColor = when {
-        secondsRemaining <= 5 -> extra.urgencyDanger
-        secondsRemaining <= 10 -> extra.urgencyWarning
-        else -> extra.ringProgress
+    // The featured card is filled with the accent color and uses white content
+    val containerColor = if (isFeatured) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+    val titleColor = if (isFeatured) Color.White else MaterialTheme.colorScheme.onSurface
+    val subtitleColor = if (isFeatured) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant
+    val codeColor = when {
+        !isRevealed -> if (isFeatured) Color.White.copy(alpha = 0.7f) else extra.tertiaryLabel
+        isFeatured -> Color.White
+        else -> extra.codeText
     }
-    val ringBg = extra.ringBackground
-    val ringText = urgencyColor
-    val iconTint = MaterialTheme.colorScheme.onSurfaceVariant
+
+    // Urgency-aware ring color
+    val urgencyColor = when {
+        isFeatured -> Color.White
+        secondsRemaining <= 5 -> extra.red
+        secondsRemaining <= 10 -> extra.orange
+        else -> MaterialTheme.colorScheme.primary
+    }
 
     val highlightBorder by animateColorAsState(
-        targetValue = if (isHighlighted) MaterialTheme.colorScheme.primary else Color.Transparent,
+        targetValue = when {
+            !isHighlighted -> Color.Transparent
+            isFeatured -> Color.White
+            else -> MaterialTheme.colorScheme.primary
+        },
         label = "highlight",
     )
 
-    // Subtle border — featured gets blue accent, others get neutral
-    val cardBorder = when {
-        isHighlighted -> BorderStroke(1.5.dp, highlightBorder)
-        isFeatured -> BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-        else -> BorderStroke(1.dp, extra.cardBorder)
-    }
-
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        border = cardBorder,
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(VaultSpecDimens.CardShape)
+            .background(containerColor)
+            .border(2.dp, highlightBorder, VaultSpecDimens.CardShape)
             .clickable {
                 if (onTap != null) {
                     onTap()
@@ -84,76 +83,73 @@ fun TokenCard(
                     copyToClipboard(context, code)
                 }
             }
+            .padding(16.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
+        // Top row: service icon + name + account + copy
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            // Top row: Service icon + name + email + copy
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                ServiceIcon(
-                    issuer = issuer,
-                    size = 40.dp,
-                )
+            ServiceIcon(issuer = issuer, size = 44.dp)
 
-                Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = issuer,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = contentColor,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    if (accountName.isNotBlank()) {
-                        Text(
-                            text = accountName,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = subtitleColor,
-                            maxLines = 1,
-                        )
-                    }
-                }
-
-                IconButton(onClick = { copyToClipboard(context, code) }) {
-                    Icon(
-                        imageVector = Icons.Filled.ContentCopy,
-                        contentDescription = "Copy code",
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Bottom row: TOTP code + countdown
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = displayCode,
-                    style = MaterialTheme.typography.displayMedium.copy(
-                        fontSize = 28.sp,
-                        letterSpacing = 5.sp,
-                    ),
-                    color = contentColor,
-                    modifier = Modifier.weight(1f),
+                    text = issuer,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = titleColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
-
-                CountdownIndicator(
-                    secondsRemaining = secondsRemaining,
-                    totalSeconds = period,
-                    size = 42.dp,
-                    strokeWidth = 3.5.dp,
-                    progressColor = urgencyColor,
-                    backgroundColor = ringBg,
-                    textColor = ringText,
-                )
+                if (accountName.isNotBlank()) {
+                    Text(
+                        text = accountName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = subtitleColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            CircleIconButton(
+                icon = Icons.Filled.ContentCopy,
+                contentDescription = "Copy code",
+                onClick = { copyToClipboard(context, code) },
+                tint = if (isFeatured) Color.White else MaterialTheme.colorScheme.primary,
+                containerColor = if (isFeatured) Color.White.copy(alpha = 0.2f) else extra.fillOnSurface,
+                size = 36.dp,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Bottom row: TOTP code + countdown
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = if (isRevealed) formatCode(code) else "••• •••",
+                style = MaterialTheme.typography.displayMedium.copy(
+                    fontFeatureSettings = "tnum",
+                ),
+                color = codeColor,
+                maxLines = 1,
+                modifier = Modifier.weight(1f),
+            )
+
+            CountdownIndicator(
+                secondsRemaining = secondsRemaining,
+                totalSeconds = period,
+                size = 44.dp,
+                strokeWidth = 3.5.dp,
+                progressColor = urgencyColor,
+                backgroundColor = if (isFeatured) Color.White.copy(alpha = 0.25f) else extra.fillOnSurface,
+            )
         }
     }
 }
