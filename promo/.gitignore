@@ -1,0 +1,11 @@
+# Generated or large media: recordings, rendered video and thumbnails stay local
+build/
+audio/
+footage/
+*.mp4
+*.png
+__pycache__/
+
+# ElevenLabs key
+.elevenlabs_key
+.env
