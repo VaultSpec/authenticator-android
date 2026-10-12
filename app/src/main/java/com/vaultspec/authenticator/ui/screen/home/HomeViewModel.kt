@@ -5,7 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vaultspec.authenticator.backup.BackupManager
+import com.vaultspec.authenticator.backup.AutoBackupScheduler
 import com.vaultspec.authenticator.data.db.CategoryDao
 import com.vaultspec.authenticator.data.db.entity.TokenEntry
 import com.vaultspec.authenticator.data.prefs.AppPreferencesManager
@@ -49,7 +49,7 @@ class HomeViewModel @Inject constructor(
     private val vaultRepository: VaultRepository,
     private val categoryDao: CategoryDao,
     private val prefs: AppPreferencesManager,
-    private val backupManager: BackupManager,
+    private val autoBackupScheduler: AutoBackupScheduler,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -69,6 +69,8 @@ class HomeViewModel @Inject constructor(
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
 
     init {
+        // The vault is unlocked here: run any scheduled backups that are due
+        autoBackupScheduler.runDueBackups()
         // Tick every second to refresh TOTP codes
         viewModelScope.launch {
             while (true) {
@@ -171,7 +173,6 @@ class HomeViewModel @Inject constructor(
     fun onDeleteToken(entry: TokenEntry) {
         viewModelScope.launch {
             tokenRepository.deleteToken(entry)
-            backupManager.triggerAutoBackupIfEnabled(appContext)
         }
     }
 

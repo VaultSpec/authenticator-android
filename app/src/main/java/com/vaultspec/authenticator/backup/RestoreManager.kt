@@ -47,28 +47,39 @@ class RestoreManager @Inject constructor(
         replace: Boolean = true,
     ): Int {
         val result = decryptBackup(context, fileUri, password)
+        return importAccounts(result.entries, replace)
+    }
 
+    /**
+     * Write decrypted accounts into the database. The vault must be unlocked.
+     *
+     * @param replace If true, deletes all existing tokens first. If false, merges (adds all).
+     */
+    suspend fun importAccounts(accounts: List<OtpAccount>, replace: Boolean = true): Int {
         if (replace) {
             tokenRepository.deleteAll()
         }
 
-        val entries = result.entries.map { account ->
+        val entries = accounts.map { account ->
             tokenRepository.encryptAccount(account)
         }
         tokenRepository.insertAllEncrypted(entries)
 
-        return result.entriesCount
+        return accounts.size
     }
+
+    /** Parse the JSON document of a backup (a .vsbk file or a cloud backup). */
+    fun parsePayload(json: String): BackupPayload = gson.fromJson(json, BackupPayload::class.java)
 
     private fun readBackupFile(context: Context, fileUri: Uri): BackupPayload {
         val json = context.contentResolver.openInputStream(fileUri)?.use { input ->
             input.bufferedReader().readText()
         } ?: throw IllegalStateException("Cannot read backup file")
 
-        return gson.fromJson(json, BackupPayload::class.java)
+        return parsePayload(json)
     }
 
-    private fun decryptPayload(payload: BackupPayload, password: String): List<OtpAccount> {
+    fun decryptPayload(payload: BackupPayload, password: String): List<OtpAccount> {
         require(payload.version == 1) { "Unsupported backup version: ${payload.version}" }
         require(payload.app == "VaultSpec") { "Not a VaultSpec backup" }
 

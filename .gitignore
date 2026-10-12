@@ -28,6 +28,7 @@ captures/
 *.keystore
 keystore/
 keystore.properties
+*.pem
 
 # Play Store assets
 playstore_*.png

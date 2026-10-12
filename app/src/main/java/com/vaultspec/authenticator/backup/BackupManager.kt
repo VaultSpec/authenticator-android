@@ -45,24 +45,8 @@ class BackupManager @Inject constructor(
         password: String,
         masterKey: SecretKey,
     ): String {
-        // 1. Get all token entries and decrypt their secrets
-        val entries = tokenRepository.getAll()
-        val backupEntries = entries.map { entry ->
-            val secretBase32 = tokenRepository.decryptSecret(entry, masterKey)
-            BackupTokenEntry(
-                issuer = entry.issuer,
-                accountName = entry.accountName,
-                secret = secretBase32,
-                algorithm = entry.algorithm,
-                digits = entry.digits,
-                period = entry.period,
-                category = entry.category,
-                icon = entry.icon,
-            )
-        }
-
-        // 2. Serialize to JSON
-        val jsonBytes = gson.toJson(backupEntries).toByteArray(Charsets.UTF_8)
+        // 1-2. Decrypt all token secrets and serialize to JSON
+        val jsonBytes = exportTokensJson(masterKey)
 
         // 3. Encrypt with password-derived key
         val salt = VaultCrypto.generateSalt()
@@ -98,19 +82,28 @@ class BackupManager @Inject constructor(
             out.write(gson.toJson(payload).toByteArray(Charsets.UTF_8))
         } ?: throw IllegalStateException("Cannot write to backup file")
 
+        prefs.localLastBackupAt = System.currentTimeMillis()
         return filename
     }
 
-    suspend fun triggerAutoBackupIfEnabled(context: Context) {
-        if (!prefs.autoBackupEnabled) return
-        val folderUriStr = prefs.backupFolderUri ?: return
-        val password = prefs.backupPassword ?: return
-        val masterKey = vaultRepository.masterKey ?: return
-        try {
-            createBackup(context, Uri.parse(folderUriStr), password, masterKey)
-        } catch (_: Exception) {
-            // Silent failure for auto-backup
+    /**
+     * All tokens with their secrets decrypted, as the JSON document that gets encrypted into a
+     * backup. Shared by local file backups and cloud backups.
+     */
+    suspend fun exportTokensJson(masterKey: SecretKey): ByteArray {
+        val backupEntries = tokenRepository.getAll().map { entry ->
+            BackupTokenEntry(
+                issuer = entry.issuer,
+                accountName = entry.accountName,
+                secret = tokenRepository.decryptSecret(entry, masterKey),
+                algorithm = entry.algorithm,
+                digits = entry.digits,
+                period = entry.period,
+                category = entry.category,
+                icon = entry.icon,
+            )
         }
+        return gson.toJson(backupEntries).toByteArray(Charsets.UTF_8)
     }
 
     companion object {

@@ -3,7 +3,6 @@ package com.vaultspec.authenticator.ui.screen.addaccount
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.vaultspec.authenticator.backup.BackupManager
 import com.vaultspec.authenticator.data.db.CategoryDao
 import com.vaultspec.authenticator.data.model.OtpAccount
 import com.vaultspec.authenticator.data.repository.TokenRepository
@@ -38,7 +37,6 @@ data class AddAccountUiState(
 class AddAccountViewModel @Inject constructor(
     private val tokenRepository: TokenRepository,
     private val categoryDao: CategoryDao,
-    private val backupManager: BackupManager,
     @ApplicationContext private val appContext: Context,
 ) : ViewModel() {
 
@@ -145,7 +143,6 @@ class AddAccountViewModel @Inject constructor(
                     category = s.category,
                 )
                 tokenRepository.addAccount(account)
-                backupManager.triggerAutoBackupIfEnabled(appContext)
                 _state.value = _state.value.copy(isLoading = false, isSaved = true)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(

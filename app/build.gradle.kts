@@ -17,7 +17,7 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.vaultspec.authenticator"
-    compileSdk = 35
+    compileSdk = 36
 
     signingConfigs {
         if (keystorePropertiesFile.exists()) {
@@ -33,11 +33,16 @@ android {
     defaultConfig {
         applicationId = "com.vaultspec.authenticator"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 10
-        versionName = "1.9.0"
+        targetSdk = 36
+        versionCode = 11
+        versionName = "1.9.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // VaultSpec Cloud API. To test against a server on this machine from the emulator, build with
+        // -PcloudBaseUrl=http://10.0.2.2:8080 (debug builds allow plain HTTP to that address).
+        val cloudBaseUrl = (project.findProperty("cloudBaseUrl") as String?) ?: "https://api.vaultspec.in"
+        buildConfigField("String", "CLOUD_BASE_URL", "\"$cloudBaseUrl\"")
     }
 
     buildTypes {
@@ -66,6 +71,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
@@ -129,6 +135,9 @@ dependencies {
 
     // DocumentFile for SAF backup
     implementation("androidx.documentfile:documentfile:1.0.1")
+
+    // HTTP client for VaultSpec Cloud (same version Coil already brings in)
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // Gson for JSON serialization
     implementation("com.google.code.gson:gson:2.11.0")

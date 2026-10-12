@@ -20,6 +20,7 @@ import androidx.navigation.compose.rememberNavController
 import com.vaultspec.authenticator.data.model.VaultState
 import com.vaultspec.authenticator.data.prefs.AppPreferencesManager
 import com.vaultspec.authenticator.data.repository.VaultRepository
+import com.vaultspec.authenticator.ui.screen.account.AccountScreen
 import com.vaultspec.authenticator.ui.screen.addaccount.AddAccountScreen
 import com.vaultspec.authenticator.ui.screen.addaccount.AddAccountViewModel
 import com.vaultspec.authenticator.ui.screen.home.HomeScreen
@@ -29,6 +30,8 @@ import com.vaultspec.authenticator.ui.screen.settings.SettingsScreen
 import com.vaultspec.authenticator.ui.screen.setup.SetupScreen
 import com.vaultspec.authenticator.ui.screen.splash.SplashScreen
 import com.vaultspec.authenticator.ui.screen.unlock.UnlockScreen
+
+private const val KEY_CLOUD_SIGNED_IN = "cloud_signed_in"
 
 @Composable
 fun NavGraph(
@@ -65,7 +68,7 @@ fun NavGraph(
     }
 
     // Pushed screens slide in over their parent; everything else cross-fades
-    val pushed = setOf(Routes.ADD_ACCOUNT, Routes.SETTINGS, Routes.QR_SCANNER)
+    val pushed = setOf(Routes.ADD_ACCOUNT, Routes.SETTINGS, Routes.QR_SCANNER, Routes.ACCOUNT)
     val slide = tween<IntOffset>(durationMillis = 350, easing = FastOutSlowInEasing)
     val fade = tween<Float>(durationMillis = 250)
 
@@ -124,13 +127,21 @@ fun NavGraph(
             )
         }
 
-        composable(Routes.SETUP) {
+        composable(Routes.SETUP) { backStackEntry ->
+            // Set by the account screen when the user signs in to restore from the cloud
+            val cloudSignedIn = backStackEntry.savedStateHandle
+                .getStateFlow(KEY_CLOUD_SIGNED_IN, false)
+                .collectAsState()
+
             SetupScreen(
                 onSetupComplete = {
                     navController.navigate(Routes.HOME) {
                         popUpTo(0) { inclusive = true }
                     }
                 },
+                onCloudSignIn = { navController.navigate(Routes.ACCOUNT) },
+                cloudSignedIn = cloudSignedIn.value,
+                onCloudSignedInHandled = { backStackEntry.savedStateHandle[KEY_CLOUD_SIGNED_IN] = false },
             )
         }
 
@@ -194,6 +205,19 @@ fun NavGraph(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
+                onOpenAccount = { navController.navigate(Routes.ACCOUNT) },
+            )
+        }
+
+        composable(Routes.ACCOUNT) {
+            AccountScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onSignedIn = {
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set(KEY_CLOUD_SIGNED_IN, true)
+                    navController.popBackStack()
+                },
             )
         }
     }

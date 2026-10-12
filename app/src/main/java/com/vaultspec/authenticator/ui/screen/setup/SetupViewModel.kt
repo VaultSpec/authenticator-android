@@ -3,7 +3,9 @@ package com.vaultspec.authenticator.ui.screen.setup
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaultspec.authenticator.backup.CloudBackupManager
 import com.vaultspec.authenticator.backup.RestoreManager
+import com.vaultspec.authenticator.cloud.CloudApi
 import com.vaultspec.authenticator.data.repository.VaultRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -35,13 +37,77 @@ data class SetupUiState(
     val restoreError: String? = null,
     val restoreSuccess: Boolean = false,
     val restoredCount: Int = 0,
+    // Restore from cloud
+    val showCloudRestoreDialog: Boolean = false,
+    val cloudVaultPassword: String = "",
+    val cloudRestoreError: String? = null,
 )
 
 @HiltViewModel
 class SetupViewModel @Inject constructor(
     private val vaultRepository: VaultRepository,
     private val restoreManager: RestoreManager,
+    private val cloudApi: CloudApi,
+    private val cloudBackupManager: CloudBackupManager,
 ) : ViewModel() {
+
+    val isCloudSignedIn: Boolean get() = cloudApi.isSignedIn
+
+    // --- Restore from cloud ---
+
+    fun onShowCloudRestore() {
+        _state.value = _state.value.copy(showCloudRestoreDialog = true, cloudVaultPassword = "", cloudRestoreError = null)
+    }
+
+    fun onDismissCloudRestore() {
+        _state.value = _state.value.copy(showCloudRestoreDialog = false, cloudVaultPassword = "", cloudRestoreError = null)
+    }
+
+    fun onCloudVaultPasswordChange(value: String) {
+        _state.value = _state.value.copy(cloudVaultPassword = value, cloudRestoreError = null)
+    }
+
+    /**
+     * Downloads the latest cloud backup and decrypts it with the entered vault password. Only if
+     * that succeeds is the vault created — with the same password — and the accounts imported.
+     */
+    fun onCloudRestore() {
+        val password = _state.value.cloudVaultPassword
+        if (password.isEmpty()) {
+            _state.value = _state.value.copy(cloudRestoreError = "Enter your vault password")
+            return
+        }
+        _state.value = _state.value.copy(isLoading = true, cloudRestoreError = null)
+        viewModelScope.launch {
+            try {
+                val payload = cloudBackupManager.fetchLatest()
+                    ?: throw IllegalStateException("This account has no cloud backup yet")
+                val accounts = cloudBackupManager.decrypt(payload, password)
+                val count = withContext(Dispatchers.IO) {
+                    vaultRepository.setupVault(password)
+                    restoreManager.importAccounts(accounts, replace = true)
+                }
+                // Keep backing up from this device under the same password
+                cloudBackupManager.adopt(password)
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    showCloudRestoreDialog = false,
+                    cloudVaultPassword = "",
+                    restoreSuccess = true,
+                    restoredCount = count,
+                    isSetupComplete = true,
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    cloudRestoreError = e.message ?: "Restore failed. Try again.",
+                )
+            }
+        }
+    }
+
 
     private val _state = MutableStateFlow(SetupUiState())
     val state: StateFlow<SetupUiState> = _state.asStateFlow()

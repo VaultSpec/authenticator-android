@@ -3,7 +3,11 @@ package com.vaultspec.authenticator.ui.screen.settings
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.vaultspec.authenticator.backup.AutoBackupScheduler
 import com.vaultspec.authenticator.backup.BackupManager
+import com.vaultspec.authenticator.backup.CloudBackupManager
+import com.vaultspec.authenticator.backup.ExistingCloudBackupException
+import com.vaultspec.authenticator.cloud.CloudApi
 import com.vaultspec.authenticator.backup.RestoreManager
 import com.vaultspec.authenticator.data.prefs.AppPreferencesManager
 import com.vaultspec.authenticator.data.repository.VaultRepository
@@ -51,7 +55,29 @@ data class SettingsUiState(
     val themeMode: String = "system",
     val pitchBlack: Boolean = false,
     val sessionTimeoutSeconds: Int = 0,
+    val localBackupPeriodDays: Int = 1,
+    val localLastBackupAt: Long = 0L,
+    // Cloud backup
+    val cloudBackupPeriodDays: Int = 1,
+    val cloudEmail: String? = null,
+    val cloudBackupEnabled: Boolean = false,
+    val cloudLastBackupAt: Long = 0L,
+    val cloudBusy: Boolean = false,
+    val cloudDialog: CloudDialog? = null,
+    val cloudPassword: String = "",
 )
+
+/** Which cloud dialog is open. [cloudPassword][SettingsUiState.cloudPassword] holds its input. */
+enum class CloudDialog {
+    /** Asks for the vault password to turn cloud backup on. */
+    Enable,
+    /** The account already has backups from another vault; confirm replacing them. */
+    ConfirmReplace,
+    /** Asks for the vault password to restore the latest cloud backup. */
+    Restore,
+    /** Asks for the account password to delete the account. */
+    DeleteAccount,
+}
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -59,6 +85,9 @@ class SettingsViewModel @Inject constructor(
     private val backupManager: BackupManager,
     private val restoreManager: RestoreManager,
     private val prefs: AppPreferencesManager,
+    private val cloudApi: CloudApi,
+    private val cloudBackupManager: CloudBackupManager,
+    private val autoBackupScheduler: AutoBackupScheduler,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsUiState(
@@ -76,6 +105,12 @@ class SettingsViewModel @Inject constructor(
         backupFolderUri = prefs.backupFolderUri,
         autoBackupEnabled = prefs.autoBackupEnabled,
         hasBackupPassword = prefs.backupPassword != null,
+        localBackupPeriodDays = prefs.localBackupPeriodDays,
+        localLastBackupAt = prefs.localLastBackupAt,
+        cloudBackupPeriodDays = prefs.cloudBackupPeriodDays,
+        cloudEmail = cloudApi.email.takeIf { cloudApi.isSignedIn },
+        cloudBackupEnabled = cloudBackupManager.isEnabled,
+        cloudLastBackupAt = prefs.cloudLastBackupAt,
     ))
     val state: StateFlow<SettingsUiState> = _state.asStateFlow()
 
@@ -163,11 +198,19 @@ class SettingsViewModel @Inject constructor(
                 withContext(Dispatchers.IO) {
                     vaultRepository.changePassword(s.newPassword)
                 }
+                // Cloud backups are encrypted with the vault password: re-key and replace them
+                val cloudWasOn = cloudBackupManager.isEnabled
+                val cloudUpdated = cloudBackupManager.onVaultPasswordChanged(s.newPassword)
                 _state.value = _state.value.copy(
                     isLoading = false,
                     showChangePassword = false,
                     oldPassword = "", newPassword = "", confirmNewPassword = "",
-                    message = "Password changed successfully",
+                    cloudLastBackupAt = prefs.cloudLastBackupAt,
+                    message = when {
+                        !cloudWasOn -> "Password changed successfully"
+                        cloudUpdated -> "Password changed. Cloud backup replaced with the new password."
+                        else -> "Password changed. Cloud backup will update when you're back online."
+                    },
                 )
             } catch (e: CancellationException) {
                 throw e
@@ -212,6 +255,20 @@ class SettingsViewModel @Inject constructor(
         )
     }
 
+    /** Steps the local auto-backup period through the available choices. */
+    fun onLocalBackupPeriodCycle() {
+        val next = AutoBackupScheduler.nextPeriod(prefs.localBackupPeriodDays)
+        prefs.localBackupPeriodDays = next
+        _state.value = _state.value.copy(localBackupPeriodDays = next)
+    }
+
+    /** Steps the cloud auto-backup period through the available choices. */
+    fun onCloudBackupPeriodCycle() {
+        val next = AutoBackupScheduler.nextPeriod(prefs.cloudBackupPeriodDays)
+        prefs.cloudBackupPeriodDays = next
+        _state.value = _state.value.copy(cloudBackupPeriodDays = next)
+    }
+
     fun onAutoBackupToggle(enabled: Boolean) {
         if (enabled) {
             if (prefs.backupFolderUri == null) {
@@ -225,6 +282,7 @@ class SettingsViewModel @Inject constructor(
         }
         prefs.autoBackupEnabled = enabled
         _state.value = _state.value.copy(autoBackupEnabled = enabled)
+        if (enabled) autoBackupScheduler.runDueBackups()
     }
 
     fun onManualBackup(context: android.content.Context) {
@@ -252,6 +310,7 @@ class SettingsViewModel @Inject constructor(
                 }
                 _state.value = _state.value.copy(
                     isLoading = false,
+                    localLastBackupAt = prefs.localLastBackupAt,
                     message = "Backup saved: $filename",
                 )
             } catch (e: CancellationException) {
@@ -313,6 +372,129 @@ class SettingsViewModel @Inject constructor(
                     error = "Restore failed: ${e.message}"
                 )
             }
+        }
+    }
+
+    // --- Cloud backup ---
+
+    /** Re-reads account and backup state, e.g. after returning from the sign-in screen. */
+    fun refreshCloudState() {
+        _state.value = _state.value.copy(
+            cloudEmail = cloudApi.email.takeIf { cloudApi.isSignedIn },
+            cloudBackupEnabled = cloudBackupManager.isEnabled,
+            cloudLastBackupAt = prefs.cloudLastBackupAt,
+            localLastBackupAt = prefs.localLastBackupAt,
+        )
+    }
+
+    fun onCloudPasswordChange(value: String) {
+        _state.value = _state.value.copy(cloudPassword = value, error = null)
+    }
+
+    fun onShowCloudDialog(dialog: CloudDialog) {
+        _state.value = _state.value.copy(cloudDialog = dialog, cloudPassword = "", error = null)
+    }
+
+    fun onDismissCloudDialog() {
+        _state.value = _state.value.copy(cloudDialog = null, cloudPassword = "", error = null)
+    }
+
+    fun onCloudBackupToggle(enabled: Boolean) {
+        if (enabled) {
+            onShowCloudDialog(CloudDialog.Enable)
+        } else {
+            cloudBackupManager.disable()
+            refreshCloudState()
+        }
+    }
+
+    /** Turns cloud backup on with the entered vault password. */
+    fun onCloudEnable(replaceExisting: Boolean = false) {
+        val password = _state.value.cloudPassword
+        if (password.isEmpty()) {
+            _state.value = _state.value.copy(error = "Enter your vault password")
+            return
+        }
+        cloudCall(
+            onSuccess = { "Cloud backup is on" },
+            onError = { e ->
+                if (e is ExistingCloudBackupException) {
+                    // Keep the entered password so confirming doesn't ask for it again
+                    _state.value = _state.value.copy(cloudBusy = false, cloudDialog = CloudDialog.ConfirmReplace)
+                    true
+                } else false
+            },
+        ) {
+            cloudBackupManager.enable(password, replaceExisting)
+        }
+    }
+
+    fun onCloudBackupNow() = cloudCall(onSuccess = { "Backed up to VaultSpec Cloud" }) {
+        cloudBackupManager.backupNow()
+    }
+
+    /** Replaces all accounts with the newest cloud backup, decrypted with the entered vault password. */
+    fun onCloudRestore() {
+        val password = _state.value.cloudPassword
+        if (password.isEmpty()) {
+            _state.value = _state.value.copy(error = "Enter the vault password the backup was made with")
+            return
+        }
+        var count = 0
+        cloudCall(onSuccess = { "Restored $count accounts" }) {
+            val payload = cloudBackupManager.fetchLatest()
+                ?: throw IllegalStateException("This account has no cloud backup yet")
+            val accounts = cloudBackupManager.decrypt(payload, password)
+            count = restoreManager.importAccounts(accounts, replace = true)
+        }
+    }
+
+    fun onCloudSignOut() = cloudCall(onSuccess = { "Signed out" }) {
+        withContext(Dispatchers.IO) { cloudApi.logout() }
+        cloudBackupManager.disable()
+    }
+
+    fun onCloudDeleteAccount() {
+        val password = _state.value.cloudPassword
+        if (password.isEmpty()) {
+            _state.value = _state.value.copy(error = "Enter your account password")
+            return
+        }
+        cloudCall(onSuccess = { "Account and cloud backups deleted" }) {
+            withContext(Dispatchers.IO) { cloudApi.deleteAccount(password) }
+            cloudBackupManager.disable()
+        }
+    }
+
+    /**
+     * Runs a cloud action with shared busy/error handling. On success the open dialog closes and
+     * [onSuccess] is shown; errors stay inside the dialog when one is open.
+     */
+    private fun cloudCall(
+        onSuccess: () -> String,
+        onError: (Exception) -> Boolean = { false },
+        block: suspend () -> Unit,
+    ) {
+        _state.value = _state.value.copy(cloudBusy = true, error = null)
+        viewModelScope.launch {
+            try {
+                block()
+                _state.value = _state.value.copy(
+                    cloudBusy = false, cloudDialog = null, cloudPassword = "", message = onSuccess(),
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (!onError(e)) {
+                    val text = e.message ?: "Something went wrong. Try again."
+                    _state.value = if (_state.value.cloudDialog != null) {
+                        _state.value.copy(cloudBusy = false, error = text)
+                    } else {
+                        _state.value.copy(cloudBusy = false, message = text)
+                    }
+                }
+            }
+            refreshCloudState()
         }
     }
 

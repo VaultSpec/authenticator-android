@@ -103,12 +103,68 @@ class AppPreferencesManager @Inject constructor(
         get() = prefs.getBoolean(KEY_AUTO_BACKUP, false)
         set(value) = prefs.edit().putBoolean(KEY_AUTO_BACKUP, value).apply()
 
+    /** Days between automatic local backups (see AutoBackupScheduler.PERIODS). */
+    var localBackupPeriodDays: Int
+        get() = prefs.getInt(KEY_LOCAL_BACKUP_PERIOD, 1)
+        set(value) = prefs.edit().putInt(KEY_LOCAL_BACKUP_PERIOD, value).apply()
+
+    var localLastBackupAt: Long
+        get() = prefs.getLong(KEY_LOCAL_LAST_BACKUP, 0L)
+        set(value) = prefs.edit().putLong(KEY_LOCAL_LAST_BACKUP, value).apply()
+
     var backupPassword: String?
         get() = prefs.getString(KEY_BACKUP_PASSWORD, null)
         set(value) {
             if (value != null) prefs.edit().putString(KEY_BACKUP_PASSWORD, value).apply()
             else prefs.edit().remove(KEY_BACKUP_PASSWORD).apply()
         }
+
+    // ── VaultSpec Cloud ──
+
+    var cloudEmail: String?
+        get() = prefs.getString(KEY_CLOUD_EMAIL, null)
+        set(value) = putOrRemove(KEY_CLOUD_EMAIL, value)
+
+    var cloudAccessToken: String?
+        get() = prefs.getString(KEY_CLOUD_ACCESS_TOKEN, null)
+        set(value) = putOrRemove(KEY_CLOUD_ACCESS_TOKEN, value)
+
+    var cloudRefreshToken: String?
+        get() = prefs.getString(KEY_CLOUD_REFRESH_TOKEN, null)
+        set(value) = putOrRemove(KEY_CLOUD_REFRESH_TOKEN, value)
+
+    var cloudBackupEnabled: Boolean
+        get() = prefs.getBoolean(KEY_CLOUD_BACKUP_ENABLED, false)
+        set(value) = prefs.edit().putBoolean(KEY_CLOUD_BACKUP_ENABLED, value).apply()
+
+    /** Base64 AES key derived from the vault password; encrypts cloud backups. */
+    var cloudKey: String?
+        get() = prefs.getString(KEY_CLOUD_KEY, null)
+        set(value) = putOrRemove(KEY_CLOUD_KEY, value)
+
+    /** Hex scrypt salt that [cloudKey] was derived with. */
+    var cloudSalt: String?
+        get() = prefs.getString(KEY_CLOUD_SALT, null)
+        set(value) = putOrRemove(KEY_CLOUD_SALT, value)
+
+    /** Days between automatic cloud backups (see AutoBackupScheduler.PERIODS). */
+    var cloudBackupPeriodDays: Int
+        get() = prefs.getInt(KEY_CLOUD_BACKUP_PERIOD, 1)
+        set(value) = prefs.edit().putInt(KEY_CLOUD_BACKUP_PERIOD, value).apply()
+
+    var cloudLastBackupAt: Long
+        get() = prefs.getLong(KEY_CLOUD_LAST_BACKUP, 0L)
+        set(value) = prefs.edit().putLong(KEY_CLOUD_LAST_BACKUP, value).apply()
+
+    /** An upload failed and should be retried the next time the vault is open. */
+    var cloudBackupPending: Boolean
+        get() = prefs.getBoolean(KEY_CLOUD_BACKUP_PENDING, false)
+        set(value) = prefs.edit().putBoolean(KEY_CLOUD_BACKUP_PENDING, value).apply()
+
+    private fun putOrRemove(key: String, value: String?) {
+        if (value != null) prefs.edit().putString(key, value).apply()
+        else prefs.edit().remove(key).apply()
+    }
 
     var onboardingCompleted: Boolean
         get() = prefs.getBoolean(KEY_ONBOARDING_COMPLETED, false)
@@ -131,5 +187,16 @@ class AppPreferencesManager @Inject constructor(
         private const val KEY_AUTO_BACKUP = "auto_backup_enabled"
         private const val KEY_BACKUP_PASSWORD = "backup_password"
         private const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
+        private const val KEY_LOCAL_BACKUP_PERIOD = "local_backup_period_days"
+        private const val KEY_LOCAL_LAST_BACKUP = "local_last_backup_at"
+        private const val KEY_CLOUD_BACKUP_PERIOD = "cloud_backup_period_days"
+        private const val KEY_CLOUD_EMAIL = "cloud_email"
+        private const val KEY_CLOUD_ACCESS_TOKEN = "cloud_access_token"
+        private const val KEY_CLOUD_REFRESH_TOKEN = "cloud_refresh_token"
+        private const val KEY_CLOUD_BACKUP_ENABLED = "cloud_backup_enabled"
+        private const val KEY_CLOUD_KEY = "cloud_key"
+        private const val KEY_CLOUD_SALT = "cloud_salt"
+        private const val KEY_CLOUD_LAST_BACKUP = "cloud_last_backup_at"
+        private const val KEY_CLOUD_BACKUP_PENDING = "cloud_backup_pending"
     }
 }

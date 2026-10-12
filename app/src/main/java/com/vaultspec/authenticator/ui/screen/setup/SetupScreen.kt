@@ -40,6 +40,9 @@ import com.vaultspec.authenticator.ui.theme.VaultSpecDimens
 @Composable
 fun SetupScreen(
     onSetupComplete: () -> Unit,
+    onCloudSignIn: () -> Unit,
+    cloudSignedIn: Boolean,
+    onCloudSignedInHandled: () -> Unit,
     viewModel: SetupViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -58,6 +61,14 @@ fun SetupScreen(
 
     LaunchedEffect(state.isSetupComplete) {
         if (state.isSetupComplete) onSetupComplete()
+    }
+
+    // Back from the account screen after signing in: continue the cloud restore
+    LaunchedEffect(cloudSignedIn) {
+        if (cloudSignedIn) {
+            onCloudSignedInHandled()
+            viewModel.onShowCloudRestore()
+        }
     }
 
     Column(
@@ -144,11 +155,40 @@ fun SetupScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         PlainButton(
-            text = "Restore from Backup",
+            text = "Restore from Backup File",
             onClick = viewModel::onShowRestore,
         )
 
+        PlainButton(
+            text = "Restore from VaultSpec Cloud",
+            onClick = {
+                if (viewModel.isCloudSignedIn) viewModel.onShowCloudRestore() else onCloudSignIn()
+            },
+        )
+
         Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    // Cloud restore dialog
+    if (state.showCloudRestoreDialog) {
+        VaultDialog(
+            title = "Restore from Cloud",
+            message = "Enter the vault password your cloud backup was made with. It becomes the " +
+                "password for this vault.",
+            confirmText = "Restore",
+            loading = state.isLoading,
+            onConfirm = viewModel::onCloudRestore,
+            onDismiss = viewModel::onDismissCloudRestore,
+        ) {
+            VaultTextField(
+                value = state.cloudVaultPassword,
+                onValueChange = viewModel::onCloudVaultPasswordChange,
+                label = "Vault Password",
+                isPassword = true,
+                onSurface = true,
+            )
+            state.cloudRestoreError?.let { ErrorText(it) }
+        }
     }
 
     // Restore dialog

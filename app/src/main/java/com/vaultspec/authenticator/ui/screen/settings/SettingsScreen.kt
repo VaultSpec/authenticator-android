@@ -1,7 +1,11 @@
 package com.vaultspec.authenticator.ui.screen.settings
 
 import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.biometric.BiometricPrompt
@@ -17,10 +21,14 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vaultspec.authenticator.backup.AutoBackupScheduler
 import com.vaultspec.authenticator.ui.component.AppIcons
 import com.vaultspec.authenticator.ui.component.ErrorText
 import com.vaultspec.authenticator.ui.component.GroupCard
@@ -40,6 +48,7 @@ import com.vaultspec.authenticator.ui.theme.VaultSpecDimens
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
+    onOpenAccount: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -72,6 +81,22 @@ fun SettingsScreen(
             viewModel.onRestoreFileSelected(it)
         }
     }
+
+    // Automatic backups confirm with a notification: ask for permission when one is switched on
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { /* Backups work either way; a denial only means no confirmation */ }
+    val askForNotifications = {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Account state changes on the sign-in screen: re-read it whenever this screen comes back
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refreshCloudState() }
 
     // Show snackbar for messages
     LaunchedEffect(state.message) {
@@ -139,8 +164,8 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Backup & Restore section
-            SectionHeader("Backup & Restore")
+            // Local Backup section
+            SectionHeader("Local Backup")
             GroupCard {
                 SettingsItem(
                     icon = AppIcons.Folder,
@@ -163,8 +188,9 @@ fun SettingsScreen(
                 SettingsItem(
                     icon = AppIcons.CloudUpload,
                     iconColor = extra.teal,
-                    title = "Backup Now",
-                    subtitle = "Save encrypted backup to selected folder",
+                    title = "Back Up Now",
+                    subtitle = if (state.localLastBackupAt == 0L) "Save encrypted backup to selected folder"
+                        else lastBackupLabel(state.localLastBackupAt),
                     onClick = { viewModel.onManualBackup(context) },
                 )
                 GroupDivider()
@@ -172,9 +198,23 @@ fun SettingsScreen(
                     icon = AppIcons.RefreshCw,
                     iconColor = extra.green,
                     title = "Auto-backup",
-                    subtitle = "Automatically backup when tokens change",
+                    subtitle = "Back up to the folder on a schedule",
                     checked = state.autoBackupEnabled,
-                    onCheckedChange = viewModel::onAutoBackupToggle,
+                    onCheckedChange = { enabled ->
+                        if (enabled) askForNotifications()
+                        viewModel.onAutoBackupToggle(enabled)
+                    },
+                )
+                GroupDivider()
+                SettingsItem(
+                    icon = AppIcons.CalendarClock,
+                    iconColor = extra.orange,
+                    title = "Frequency",
+                    subtitle = "Runs when you open VaultSpec",
+                    value = AutoBackupScheduler.periodLabel(state.localBackupPeriodDays),
+                    cycles = true,
+                    enabled = state.autoBackupEnabled,
+                    onClick = viewModel::onLocalBackupPeriodCycle,
                 )
                 GroupDivider()
                 SettingsItem(
@@ -184,6 +224,95 @@ fun SettingsScreen(
                     subtitle = "Import accounts from a backup file",
                     onClick = viewModel::onShowRestoreDialog,
                 )
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Cloud Backup section
+            SectionHeader("Cloud Backup")
+            GroupCard {
+                val email = state.cloudEmail
+                if (email == null) {
+                    SettingsItem(
+                        icon = AppIcons.Cloud,
+                        iconColor = accent,
+                        title = "VaultSpec Account",
+                        subtitle = "Sign in to keep encrypted backups in the cloud",
+                        action = "Sign In",
+                        onClick = onOpenAccount,
+                    )
+                } else {
+                    SettingsItem(
+                        icon = AppIcons.User,
+                        iconColor = accent,
+                        title = email,
+                        subtitle = "VaultSpec account",
+                        onClick = null,
+                    )
+                    GroupDivider()
+                    SettingsToggleItem(
+                        icon = AppIcons.Cloud,
+                        iconColor = extra.green,
+                        title = "Auto-backup",
+                        subtitle = "Encrypted on this device with your vault password",
+                        checked = state.cloudBackupEnabled,
+                        onCheckedChange = { enabled ->
+                            if (enabled) askForNotifications()
+                            viewModel.onCloudBackupToggle(enabled)
+                        },
+                        enabled = !state.cloudBusy,
+                    )
+                    GroupDivider()
+                    SettingsItem(
+                        icon = AppIcons.CalendarClock,
+                        iconColor = extra.orange,
+                        title = "Frequency",
+                        subtitle = "Runs when you open VaultSpec",
+                        value = AutoBackupScheduler.periodLabel(state.cloudBackupPeriodDays),
+                        cycles = true,
+                        enabled = state.cloudBackupEnabled,
+                        onClick = viewModel::onCloudBackupPeriodCycle,
+                    )
+                    GroupDivider()
+                    SettingsItem(
+                        icon = AppIcons.CloudUpload,
+                        iconColor = extra.teal,
+                        title = "Back Up Now",
+                        subtitle = when {
+                            !state.cloudBackupEnabled -> "Turn on Auto-backup first"
+                            state.cloudBusy -> "Working…"
+                            state.cloudLastBackupAt == 0L -> "No backup yet"
+                            else -> lastBackupLabel(state.cloudLastBackupAt)
+                        },
+                        enabled = state.cloudBackupEnabled && !state.cloudBusy,
+                        onClick = viewModel::onCloudBackupNow,
+                    )
+                    GroupDivider()
+                    SettingsItem(
+                        icon = AppIcons.CloudDownload,
+                        iconColor = extra.indigo,
+                        title = "Restore from Cloud",
+                        subtitle = "Replace accounts with your latest cloud backup",
+                        onClick = { viewModel.onShowCloudDialog(CloudDialog.Restore) },
+                    )
+                    GroupDivider()
+                    SettingsItem(
+                        icon = AppIcons.LogOut,
+                        iconColor = extra.gray,
+                        title = "Sign Out",
+                        subtitle = "Cloud backups stay in your account",
+                        onClick = viewModel::onCloudSignOut,
+                    )
+                    GroupDivider()
+                    SettingsItem(
+                        icon = AppIcons.UserX,
+                        iconColor = extra.red,
+                        title = "Delete Account",
+                        subtitle = "Remove your account and all cloud backups",
+                        titleColor = extra.red,
+                        onClick = { viewModel.onShowCloudDialog(CloudDialog.DeleteAccount) },
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -383,6 +512,85 @@ fun SettingsScreen(
         }
     }
 
+    // Cloud dialogs
+    when (state.cloudDialog) {
+        CloudDialog.Enable -> VaultDialog(
+            title = "Turn On Cloud Backup",
+            message = "Enter your vault password. Backups are encrypted with it on this device, " +
+                "and you'll need it to restore them.",
+            confirmText = "Turn On",
+            loading = state.cloudBusy,
+            onConfirm = { viewModel.onCloudEnable() },
+            onDismiss = viewModel::onDismissCloudDialog,
+        ) {
+            VaultTextField(
+                value = state.cloudPassword,
+                onValueChange = viewModel::onCloudPasswordChange,
+                label = "Vault Password",
+                isPassword = true,
+                onSurface = true,
+            )
+            state.error?.let { ErrorText(it) }
+        }
+
+        CloudDialog.ConfirmReplace -> VaultDialog(
+            title = "Replace Cloud Backup?",
+            message = "This account already has a backup from another vault. Backing up from this " +
+                "device deletes it. To keep those accounts, cancel and use Restore from Cloud first.",
+            icon = AppIcons.CloudUpload,
+            destructive = true,
+            confirmText = "Replace",
+            loading = state.cloudBusy,
+            onConfirm = { viewModel.onCloudEnable(replaceExisting = true) },
+            onDismiss = viewModel::onDismissCloudDialog,
+        ) {
+            state.error?.let { ErrorText(it) }
+        }
+
+        CloudDialog.Restore -> VaultDialog(
+            title = "Restore from Cloud",
+            message = "This replaces all accounts on this device with your latest cloud backup. " +
+                "Enter the vault password the backup was made with.",
+            destructive = true,
+            confirmText = "Restore",
+            loading = state.cloudBusy,
+            onConfirm = viewModel::onCloudRestore,
+            onDismiss = viewModel::onDismissCloudDialog,
+        ) {
+            VaultTextField(
+                value = state.cloudPassword,
+                onValueChange = viewModel::onCloudPasswordChange,
+                label = "Vault Password",
+                isPassword = true,
+                onSurface = true,
+            )
+            state.error?.let { ErrorText(it) }
+        }
+
+        CloudDialog.DeleteAccount -> VaultDialog(
+            title = "Delete Account?",
+            message = "Your VaultSpec account and every cloud backup will be permanently deleted. " +
+                "Accounts on this device are not affected.",
+            icon = AppIcons.UserX,
+            destructive = true,
+            confirmText = "Delete",
+            loading = state.cloudBusy,
+            onConfirm = viewModel::onCloudDeleteAccount,
+            onDismiss = viewModel::onDismissCloudDialog,
+        ) {
+            VaultTextField(
+                value = state.cloudPassword,
+                onValueChange = viewModel::onCloudPasswordChange,
+                label = "Account Password",
+                isPassword = true,
+                onSurface = true,
+            )
+            state.error?.let { ErrorText(it) }
+        }
+
+        null -> Unit
+    }
+
     // Biometric enrollment via BiometricPrompt
     LaunchedEffect(state.showBiometricPrompt, state.biometricEnrollCipher) {
         if (state.showBiometricPrompt && state.biometricEnrollCipher != null) {
@@ -420,6 +628,7 @@ private fun SettingsRow(
     subtitle: String,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    titleColor: Color = MaterialTheme.colorScheme.onSurface,
     trailing: @Composable RowScope.() -> Unit,
 ) {
     Row(
@@ -443,7 +652,9 @@ private fun SettingsRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = titleColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = subtitle,
@@ -466,6 +677,8 @@ private fun SettingsItem(
     value: String? = null,
     action: String? = null,
     cycles: Boolean = false,
+    enabled: Boolean = true,
+    titleColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     val extra = LocalVaultSpecColors.current
     SettingsRow(
@@ -473,7 +686,9 @@ private fun SettingsItem(
         iconColor = iconColor,
         title = title,
         subtitle = subtitle,
-        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+        enabled = enabled,
+        titleColor = titleColor,
+        modifier = if (onClick != null) Modifier.clickable(enabled = enabled, onClick = onClick) else Modifier,
     ) {
         if (value != null) {
             Text(
@@ -526,6 +741,13 @@ private fun SettingsToggleItem(
             enabled = enabled,
         )
     }
+}
+
+private fun lastBackupLabel(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    if (now - timestamp < DateUtils.MINUTE_IN_MILLIS) return "Last backup just now"
+    val relative = DateUtils.getRelativeTimeSpanString(timestamp, now, DateUtils.MINUTE_IN_MILLIS)
+    return "Last backup " + relative.toString().replaceFirstChar { it.lowercase() }
 }
 
 private fun formatTimeout(seconds: Int): String = when (seconds) {

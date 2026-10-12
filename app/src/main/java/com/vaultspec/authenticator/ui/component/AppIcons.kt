@@ -341,4 +341,56 @@ object AppIcons {
         "m2 2 20 20",
         )
     }
+
+    /** lucide: cloud */
+    val Cloud: ImageVector by lazy {
+        stroked(
+        "M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z",
+        )
+    }
+
+    /** lucide: cloud-download */
+    val CloudDownload: ImageVector by lazy {
+        stroked(
+        "M12 13v8l-4-4",
+        "m12 21 4-4",
+        "M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284",
+        )
+    }
+
+    /** lucide: circle-user-round */
+    val User: ImageVector by lazy {
+        stroked(
+        "M17.925 20.056a6 6 0 0 0-11.851.001",
+        "M8 11a4 4 0 1 0 8 0a4 4 0 1 0 -8 0",
+        "M2 12a10 10 0 1 0 20 0a10 10 0 1 0 -20 0",
+        )
+    }
+
+    /** lucide: log-out */
+    val LogOut: ImageVector by lazy {
+        stroked(
+        "m16 17 5-5-5-5",
+        "M21 12H9",
+        "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4",
+        )
+    }
+
+    /** lucide: user-x */
+    val UserX: ImageVector by lazy {
+        stroked(
+        "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",
+        "M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0",
+        "M17 8L22 13",
+        "M22 8L17 13",
+        )
+    }
+
+    /** lucide: mail */
+    val Mail: ImageVector by lazy {
+        stroked(
+        "m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7",
+        "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-16a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2Z",
+        )
+    }
 }

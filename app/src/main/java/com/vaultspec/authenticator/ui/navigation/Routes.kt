@@ -9,4 +9,5 @@ object Routes {
     const val ADD_ACCOUNT = "add_account"
     const val QR_SCANNER = "qr_scanner"
     const val SETTINGS = "settings"
+    const val ACCOUNT = "account"
 }
