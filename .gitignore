@@ -37,3 +37,6 @@ ss.png
 # OS junk
 .DS_Store
 Thumbs.db
+
+# Signed bundles and R8 mapping files from Android Studio
+/app/release/
