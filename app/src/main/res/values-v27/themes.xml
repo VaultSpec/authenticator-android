@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Edge-to-edge on Android 8.1–14: both bars transparent; icon colours follow the app theme
+         (set in MainActivity). Android 15+ is edge-to-edge regardless of these values. -->
+    <style name="Theme.VaultSpec" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

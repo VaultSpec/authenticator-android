@@ -1,10 +1,11 @@
 package com.vaultspec.authenticator
 
+import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.view.View
 import android.view.WindowManager
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
@@ -41,7 +42,7 @@ class MainActivity : FragmentActivity() {
             )
         }
 
-        enableEdgeToEdge()
+        drawBehindSystemBars()
 
         prefs.initThemeFlows()
         updateScreenshotPolicy()
@@ -110,6 +111,22 @@ class MainActivity : FragmentActivity() {
                 vaultRepository.lock()
             }
         }
+    }
+
+    /**
+     * Edge-to-edge without the window APIs that Android 15 deprecates (setStatusBarColor and friends,
+     * which androidx's enableEdgeToEdge() still calls on older versions).
+     * Android 15+ always lays the app out behind the system bars because we target API 35+. Older
+     * versions get transparent bars from the theme (values-v27) and these layout flags, the same ones
+     * WindowCompat.setDecorFitsSystemWindows(false) applies there.
+     */
+    private fun drawBehindSystemBars() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) return
+        @Suppress("DEPRECATION")
+        window.decorView.systemUiVisibility = window.decorView.systemUiVisibility or
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+            View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
     }
 
     private fun updateScreenshotPolicy() {

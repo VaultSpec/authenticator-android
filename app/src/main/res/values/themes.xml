@@ -2,5 +2,9 @@
 <resources>
     <style name="Theme.VaultSpec" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@android:color/white</item>
+        <!-- Edge-to-edge on Android 8.0 (API 26): transparent status bar. The navigation bar keeps a
+             dark scrim because light navigation icons need API 27. -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">#801B1B1B</item>
     </style>
 </resources>
