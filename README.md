@@ -68,4 +68,6 @@ A free, open-source TOTP authenticator for Android with an encrypted vault, biom
 
 ## License
 
+Copyright (C) 2026 VaultSpec Contributors.
+
 GPL-3.0 — see [LICENSE](LICENSE).
