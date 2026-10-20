@@ -90,13 +90,13 @@ def landscape(light, dark):
     d.text((146, 82), "VaultSpec", font=font("bold", 38), fill=WHITE)
     d.text((146, 126), "Authenticator", font=font("medium", 22), fill=GRAY)
 
-    d.text((66, 226), "BIGGEST", font=font("bold", 108), fill=WHITE)
-    d.text((66, 336), "UPDATE YET", font=font("bold", 108), fill=AMBER)
+    d.text((66, 226), "UPDATE", font=font("bold", 108), fill=WHITE)
+    d.text((66, 336), "OUT NOW", font=font("bold", 108), fill=AMBER)
 
     f = font("semibold", 30)
     x = chip(d, 70, 506, "New design", f)
     chip(d, x + 14, 506, "Encrypted cloud backup", f)
-    chip(d, 70, 584, "MAJOR UPDATE", font("bold", 28), fill=ACCENT + (255,))
+    chip(d, 70, 584, "VERSION 2.0  ·  GOOGLE PLAY", font("bold", 28), fill=ACCENT + (255,))
     img.convert("RGB").save(ROOT / "thumbnail.png")
 
 
@@ -109,8 +109,8 @@ def vertical(light, dark):
     img.alpha_composite(mark, (int((w - 84) / 2), 110))
     for y, text, fnt, color in (
         (214, "VAULTSPEC AUTHENTICATOR", font("semibold", 32), GRAY),
-        (280, "BIGGEST", font("bold", 150), WHITE),
-        (430, "UPDATE YET", font("bold", 150), AMBER),
+        (280, "UPDATE", font("bold", 150), WHITE),
+        (430, "OUT NOW", font("bold", 150), AMBER),
     ):
         d.text(((w - d.textlength(text, font=fnt)) / 2, y), text, font=fnt, fill=color)
 
@@ -119,7 +119,7 @@ def vertical(light, dark):
 
     d = ImageDraw.Draw(img, "RGBA")
     f = font("semibold", 38)
-    labels = ["New design", "Encrypted cloud backup"]
+    labels = ["Version 2.0", "Encrypted cloud backup"]
     widths = [d.textlength(t, font=f) + 60 for t in labels]
     x = (w - sum(widths) - 18) / 2
     for text, width in zip(labels, widths):

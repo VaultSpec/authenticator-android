@@ -46,8 +46,8 @@ SCENES = [
     dict(
         kind="title",
         headline="VaultSpec Authenticator",
-        say="VaultSpec Authenticator is getting its biggest update yet, and it lands tomorrow. "
-            "It's also coming soon to the App Store, for iOS and macOS.",
+        say="VaultSpec Authenticator 2.0 is out now on Google Play. It's our biggest update yet. "
+            "And it's coming soon to the App Store, for iPhone, iPad and Mac.",
     ),
     dict(
         headline="A complete redesign",
@@ -87,12 +87,13 @@ SCENES = [
     ),
     dict(
         kind="outro",
-        headline="Support my work",
-        say="The update rolls out tomorrow. If you like VaultSpec and want to support my work, "
-            "you can buy me a coffee at buy me a coffee dot com, slash dhruvesh sixteen. "
-            "Thanks for using VaultSpec.",
-        caption="The update rolls out tomorrow. If you like VaultSpec and want to support my work, "
-                "you can buy me a coffee at buymeacoffee.com/dhruvesh16. Thanks for using VaultSpec.",
+        headline="Update now",
+        say="Update VaultSpec from the Google Play Store to get it today. If you like VaultSpec "
+            "and want to support my work, you can buy me a coffee at buy me a coffee dot com, "
+            "slash dhruvesh sixteen. Thanks for using VaultSpec.",
+        caption="Update VaultSpec from the Google Play Store to get it today. If you like VaultSpec "
+                "and want to support my work, you can buy me a coffee at buymeacoffee.com/dhruvesh16. "
+                "Thanks for using VaultSpec.",
         hold=1.5,
     ),
 ]
@@ -250,7 +251,7 @@ def scene_card(scene, path):
         img.paste(mark, ((W - 300) // 2, 560), mark)
         centered(d, 920, "VaultSpec", font("bold", 104), WHITE)
         centered(d, 1040, "Authenticator", font("medium", 60), GRAY)
-        pill = "MAJOR UPDATE  ·  OUT TOMORROW"
+        pill = "VERSION 2.0  ·  OUT NOW"
         f = font("semibold", 32)
         pw = d.textlength(pill, font=f) + 72
         d.rounded_rectangle(((W - pw) / 2, 1190, (W + pw) / 2, 1266), radius=38, fill=ACCENT)
@@ -265,7 +266,7 @@ def scene_card(scene, path):
         img.paste(icon, (left, 1336), icon)
         d.text((left + icon_size + gap, 1340), "Coming soon to the", font=small, fill=GRAY)
         d.text((left + icon_size + gap, 1380), "App Store", font=big, fill=WHITE)
-        centered(d, 1476, "iOS  ·  macOS", font("semibold", 30), GRAY)
+        centered(d, 1476, "iPhone  ·  iPad  ·  Mac", font("semibold", 30), GRAY)
     elif kind == "outro":
         mark = logo(200)
         img.paste(mark, ((W - 200) // 2, 360), mark)
@@ -275,7 +276,13 @@ def scene_card(scene, path):
         centered(d, 930, "BUY ME A COFFEE", font("semibold", 30), ACCENT)
         centered(d, 1000, "buymeacoffee.com", font("bold", 62), WHITE)
         centered(d, 1082, "/dhruvesh16", font("bold", 62), (255, 184, 77))
-        centered(d, 1300, "Update rolls out tomorrow on Google Play", font("medium", 36), GRAY)
+        # The call to action: update from Google Play, as a solid button under the coffee card
+        cta = "Update now on Google Play"
+        f = font("bold", 44)
+        cw = d.textlength(cta, font=f) + 96
+        d.rounded_rectangle(((W - cw) / 2, 1280, (W + cw) / 2, 1384), radius=52, fill=ACCENT)
+        centered(d, 1304, cta, f, WHITE)
+        centered(d, 1430, "Version 2.0 is out now", font("medium", 34), GRAY)
     else:
         centered(d, 92, "VAULTSPEC  ·  WHAT'S NEW", font("semibold", 28), ACCENT)
         centered(d, 150, scene["headline"], font("bold", 68), WHITE)
