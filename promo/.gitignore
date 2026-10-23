@@ -9,3 +9,6 @@ __pycache__/
 # ElevenLabs key
 .elevenlabs_key
 .env
+
+# Play Store screenshots: renders, extracted frames and the local Python environment
+play/
