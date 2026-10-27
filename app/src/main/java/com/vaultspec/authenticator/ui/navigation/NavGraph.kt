@@ -23,6 +23,8 @@ import com.vaultspec.authenticator.data.repository.VaultRepository
 import com.vaultspec.authenticator.ui.screen.account.AccountScreen
 import com.vaultspec.authenticator.ui.screen.addaccount.AddAccountScreen
 import com.vaultspec.authenticator.ui.screen.addaccount.AddAccountViewModel
+import com.vaultspec.authenticator.ui.screen.connect.ScanToConnectScreen
+import com.vaultspec.authenticator.ui.screen.connect.ShowPairingCodeScreen
 import com.vaultspec.authenticator.ui.screen.home.HomeScreen
 import com.vaultspec.authenticator.ui.screen.onboarding.OnboardingScreen
 import com.vaultspec.authenticator.ui.screen.scanner.QrScannerScreen
@@ -68,7 +70,7 @@ fun NavGraph(
     }
 
     // Pushed screens slide in over their parent; everything else cross-fades
-    val pushed = setOf(Routes.ADD_ACCOUNT, Routes.SETTINGS, Routes.QR_SCANNER, Routes.ACCOUNT)
+    val pushed = setOf(Routes.ADD_ACCOUNT, Routes.SETTINGS, Routes.QR_SCANNER, Routes.ACCOUNT, Routes.CONNECT_SHOW, Routes.CONNECT_SCAN)
     val slide = tween<IntOffset>(durationMillis = 350, easing = FastOutSlowInEasing)
     val fade = tween<Float>(durationMillis = 250)
 
@@ -140,6 +142,7 @@ fun NavGraph(
                     }
                 },
                 onCloudSignIn = { navController.navigate(Routes.ACCOUNT) },
+                onConnectDevice = { navController.navigate(Routes.CONNECT_SCAN) },
                 cloudSignedIn = cloudSignedIn.value,
                 onCloudSignedInHandled = { backStackEntry.savedStateHandle[KEY_CLOUD_SIGNED_IN] = false },
             )
@@ -206,6 +209,22 @@ fun NavGraph(
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onOpenAccount = { navController.navigate(Routes.ACCOUNT) },
+                onConnectDevice = { navController.navigate(Routes.CONNECT_SHOW) },
+            )
+        }
+
+        composable(Routes.CONNECT_SHOW) {
+            ShowPairingCodeScreen(onDone = { navController.popBackStack() })
+        }
+
+        composable(Routes.CONNECT_SCAN) {
+            ScanToConnectScreen(
+                onCancel = { navController.popBackStack() },
+                onConnected = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
             )
         }
 

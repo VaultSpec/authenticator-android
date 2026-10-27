@@ -143,26 +143,9 @@ class CloudBackupManager @Inject constructor(
     }
 
     private suspend fun upload() = uploadLock.withLock {
-        val masterKey = vaultRepository.masterKey ?: throw IllegalStateException("Vault is locked")
         val saltHex = prefs.cloudSalt ?: throw IllegalStateException("Cloud backup is off")
         val keyBytes = Base64.decode(prefs.cloudKey ?: throw IllegalStateException("Cloud backup is off"), Base64.NO_WRAP)
-
-        val jsonBytes = backupManager.exportTokensJson(masterKey)
-        val encrypted = try {
-            VaultCrypto.encrypt(jsonBytes, VaultCrypto.keyFromBytes(keyBytes))
-        } finally {
-            VaultCrypto.zeroize(jsonBytes)
-            VaultCrypto.zeroize(keyBytes)
-        }
-
-        val payload = BackupPayload(
-            version = 1,
-            app = "VaultSpec",
-            created = DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
-            params = BackupParams(n = 32768, r = 8, p = 1, salt = saltHex),
-            data = Base64.encodeToString(encrypted.ciphertext, Base64.NO_WRAP),
-            iv = Base64.encodeToString(encrypted.iv, Base64.NO_WRAP),
-        )
+        val payload = encryptVault(saltHex, keyBytes)
 
         try {
             api.uploadBackup(keyId(saltHex), gson.toJson(payload))
@@ -173,6 +156,67 @@ class CloudBackupManager @Inject constructor(
         }
         prefs.cloudLastBackupAt = System.currentTimeMillis()
         prefs.cloudBackupPending = false
+    }
+
+    /** The unlocked vault as a backup document encrypted with [keyBytes] (zeroized afterwards). */
+    private suspend fun encryptVault(saltHex: String, keyBytes: ByteArray): BackupPayload {
+        val masterKey = vaultRepository.masterKey ?: throw IllegalStateException("Vault is locked")
+        val jsonBytes = backupManager.exportTokensJson(masterKey)
+        val encrypted = try {
+            VaultCrypto.encrypt(jsonBytes, VaultCrypto.keyFromBytes(keyBytes))
+        } finally {
+            VaultCrypto.zeroize(jsonBytes)
+            VaultCrypto.zeroize(keyBytes)
+        }
+        return BackupPayload(
+            version = 1,
+            app = "VaultSpec",
+            created = DateTimeFormatter.ISO_INSTANT.format(Instant.now()),
+            params = BackupParams(n = 32768, r = 8, p = 1, salt = saltHex),
+            data = Base64.encodeToString(encrypted.ciphertext, Base64.NO_WRAP),
+            iv = Base64.encodeToString(encrypted.iv, Base64.NO_WRAP),
+        )
+    }
+
+    // ── Scan & Connect ──
+
+    /** Whether a pairing code can be made without asking for the vault password. */
+    val hasBackupKey: Boolean get() = prefs.cloudKey != null && prefs.cloudSalt != null
+
+    /**
+     * Starts a pairing with a snapshot of the vault and returns its id and the token to draw. Uses the
+     * cloud backup key when there is one, otherwise a key derived from [vaultPassword] that isn't kept.
+     *
+     * @throws IllegalArgumentException if [vaultPassword] is wrong
+     */
+    suspend fun startPairing(vaultPassword: String?): Pair<String, String> = withContext(Dispatchers.IO) {
+        val saltHex: String
+        val keyBytes: ByteArray
+        if (hasBackupKey) {
+            saltHex = prefs.cloudSalt!!
+            keyBytes = Base64.decode(prefs.cloudKey!!, Base64.NO_WRAP)
+        } else {
+            requireNotNull(vaultPassword) { "Enter your vault password" }
+            try {
+                masterKeyManager.unlockWithPassword(context, vaultPassword)
+            } catch (e: Exception) {
+                throw IllegalArgumentException("Incorrect vault password")
+            }
+            val salt = VaultCrypto.generateSalt()
+            saltHex = BackupManager.bytesToHex(salt)
+            keyBytes = VaultCrypto.deriveKeyFromPassword(vaultPassword, salt).encoded
+        }
+        val pairing = api.startPairing(keyId(saltHex), gson.toJson(encryptVault(saltHex, keyBytes)))
+        pairing.id to pairing.token
+    }
+
+    suspend fun pairingStatus(id: String): String = withContext(Dispatchers.IO) { api.pairingStatus(id) }
+
+    suspend fun cancelPairing(id: String) = withContext(Dispatchers.IO) { api.cancelPairing(id) }
+
+    /** The new device: claims a scanned token, which also signs in to the other device's account. */
+    suspend fun claimPairing(token: String): BackupPayload = withContext(Dispatchers.IO) {
+        restoreManager.parsePayload(api.claimPairing(token))
     }
 
     companion object {

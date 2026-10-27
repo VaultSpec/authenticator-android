@@ -7,6 +7,9 @@ import com.vaultspec.authenticator.data.model.CloudBackup
 import com.vaultspec.authenticator.data.model.CloudBackupList
 import com.vaultspec.authenticator.data.model.CloudBackupMeta
 import com.vaultspec.authenticator.data.model.CloudError
+import com.vaultspec.authenticator.data.model.CloudPairing
+import com.vaultspec.authenticator.data.model.CloudPairingClaim
+import com.vaultspec.authenticator.data.model.CloudPairingStatus
 import com.vaultspec.authenticator.data.model.CloudSession
 import com.vaultspec.authenticator.data.prefs.AppPreferencesManager
 import okhttp3.MediaType.Companion.toMediaType
@@ -99,6 +102,32 @@ class CloudApi @Inject constructor(
         gson.fromJson(call("GET", "/v1/backups/latest", auth = true), CloudBackup::class.java)
     } catch (e: CloudException) {
         if (e.code == "not_found") null else throw e
+    }
+
+    // ── Scan & Connect ──
+
+    /** Uploads a one-time vault snapshot for a new device; the returned token becomes the particle code. */
+    fun startPairing(keyId: String, payload: String): CloudPairing {
+        val body = mapOf("keyId" to keyId, "payload" to payload)
+        return gson.fromJson(call("POST", "/v1/pairing", body, auth = true), CloudPairing::class.java)
+    }
+
+    /** "pending", "claimed" or "expired". */
+    fun pairingStatus(id: String): String =
+        gson.fromJson(call("GET", "/v1/pairing/$id", auth = true), CloudPairingStatus::class.java).status
+
+    fun cancelPairing(id: String) {
+        runCatching { call("DELETE", "/v1/pairing/$id", auth = true) }
+    }
+
+    /** The new device: claims a scanned token, signs in to the same account and returns the snapshot's JSON. */
+    fun claimPairing(token: String): String {
+        val body = mapOf("token" to token, "deviceName" to Build.MODEL)
+        val claim = gson.fromJson(call("POST", "/v1/pairing/claim", body), CloudPairingClaim::class.java)
+        prefs.cloudEmail = claim.email
+        prefs.cloudAccessToken = claim.accessToken
+        prefs.cloudRefreshToken = claim.refreshToken
+        return claim.payload
     }
 
     // ── Transport ──

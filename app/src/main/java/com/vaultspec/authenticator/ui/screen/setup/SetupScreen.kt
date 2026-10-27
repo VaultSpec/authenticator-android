@@ -41,6 +41,7 @@ import com.vaultspec.authenticator.ui.theme.VaultSpecDimens
 fun SetupScreen(
     onSetupComplete: () -> Unit,
     onCloudSignIn: () -> Unit,
+    onConnectDevice: () -> Unit,
     cloudSignedIn: Boolean,
     onCloudSignedInHandled: () -> Unit,
     viewModel: SetupViewModel = hiltViewModel(),
@@ -164,6 +165,11 @@ fun SetupScreen(
             onClick = {
                 if (viewModel.isCloudSignedIn) viewModel.onShowCloudRestore() else onCloudSignIn()
             },
+        )
+
+        PlainButton(
+            text = "Use Another Device",
+            onClick = onConnectDevice,
         )
 
         Spacer(modifier = Modifier.height(24.dp))

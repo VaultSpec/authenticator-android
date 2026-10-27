@@ -32,3 +32,22 @@ data class CloudError(
     @SerializedName("error") val error: String?,
     @SerializedName("message") val message: String?,
 )
+
+/** A started Scan & Connect pairing: [token] is drawn as the particle code. */
+data class CloudPairing(
+    @SerializedName("id") val id: String,
+    @SerializedName("token") val token: String,
+    @SerializedName("expiresAt") val expiresAt: String,
+)
+
+data class CloudPairingStatus(
+    @SerializedName("status") val status: String, // pending, claimed or expired
+)
+
+/** What the new device receives for a scanned code: a session for the account and the vault snapshot. */
+data class CloudPairingClaim(
+    @SerializedName("email") val email: String,
+    @SerializedName("payload") val payload: String,
+    @SerializedName("accessToken") val accessToken: String,
+    @SerializedName("refreshToken") val refreshToken: String,
+)

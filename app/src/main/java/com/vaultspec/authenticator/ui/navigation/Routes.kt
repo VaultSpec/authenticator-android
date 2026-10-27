@@ -10,4 +10,6 @@ object Routes {
     const val QR_SCANNER = "qr_scanner"
     const val SETTINGS = "settings"
     const val ACCOUNT = "account"
+    const val CONNECT_SHOW = "connect_show"
+    const val CONNECT_SCAN = "connect_scan"
 }

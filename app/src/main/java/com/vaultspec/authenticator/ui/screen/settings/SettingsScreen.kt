@@ -49,6 +49,7 @@ import com.vaultspec.authenticator.ui.theme.VaultSpecDimens
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onOpenAccount: () -> Unit,
+    onConnectDevice: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -286,6 +287,14 @@ fun SettingsScreen(
                         },
                         enabled = state.cloudBackupEnabled && !state.cloudBusy,
                         onClick = viewModel::onCloudBackupNow,
+                    )
+                    GroupDivider()
+                    SettingsItem(
+                        icon = AppIcons.Smartphone,
+                        iconColor = extra.indigo,
+                        title = "Connect a Device",
+                        subtitle = "Show a code to set up a new phone or iPhone",
+                        onClick = onConnectDevice,
                     )
                     GroupDivider()
                     SettingsItem(
