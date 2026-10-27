@@ -19,6 +19,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlin.coroutines.cancellation.CancellationException
 
+/** The home screen's "everything" filter; an account saved with it has no category of its own. */
+const val ALL_CATEGORY = "All"
+
 data class AddAccountUiState(
     val issuer: String = "",
     val accountName: String = "",
@@ -26,7 +29,7 @@ data class AddAccountUiState(
     val algorithm: String = "SHA1",
     val digits: Int = 6,
     val period: Int = 30,
-    val category: String = "All",
+    val category: String = ALL_CATEGORY,
     val isLoading: Boolean = false,
     val error: String? = null,
     val isSaved: Boolean = false,
@@ -83,21 +86,19 @@ class AddAccountViewModel @Inject constructor(
         _state.value = _state.value.copy(showAddCategoryDialog = false)
     }
 
+    /** Saves a new category (or picks the existing one with that name) and selects it. */
     fun onAddCategory(name: String) {
-        if (name.isBlank()) return
+        val trimmed = name.trim()
+        if (trimmed.isEmpty() || trimmed.equals(ALL_CATEGORY, ignoreCase = true)) return
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val category = com.vaultspec.authenticator.data.db.entity.Category(
-                    name = name.trim(),
-                    isDefault = false,
-                )
-                categoryDao.insert(category)
-                _state.value = _state.value.copy(
-                    category = name.trim(),
-                    showAddCategoryDialog = false,
-                )
-            } catch (_: CancellationException) {
-                throw CancellationException()
+                val existing = categories.value.firstOrNull { it.equals(trimmed, ignoreCase = true) }
+                if (existing == null) {
+                    categoryDao.insert(com.vaultspec.authenticator.data.db.entity.Category(name = trimmed, isDefault = false))
+                }
+                _state.value = _state.value.copy(category = existing ?: trimmed, showAddCategoryDialog = false)
+            } catch (e: CancellationException) {
+                throw e
             } catch (_: Exception) { }
         }
     }

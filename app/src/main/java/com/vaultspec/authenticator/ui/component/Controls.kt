@@ -376,6 +376,30 @@ fun PillChip(
     }
 }
 
+/** The "+ New" pill that ends a row of [PillChip]s: tinted, with a plus glyph. */
+@Composable
+fun AddPillChip(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val tint = MaterialTheme.colorScheme.primary
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = modifier
+            .height(36.dp)
+            .clip(CircleShape)
+            .background(tint.copy(alpha = 0.12f))
+            .border(1.dp, tint.copy(alpha = 0.35f), CircleShape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(start = 12.dp, end = 16.dp),
+    ) {
+        Icon(AppIcons.Plus, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+        Text(text = text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = tint, maxLines = 1)
+    }
+}
+
 // ── Structure ──
 
 /** Rounded colored tile with a white glyph, used at the start of list rows. */

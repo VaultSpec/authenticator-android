@@ -10,6 +10,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.vaultspec.authenticator.ui.component.AddPillChip
 import com.vaultspec.authenticator.ui.component.AppIcons
 import com.vaultspec.authenticator.ui.component.ErrorText
 import com.vaultspec.authenticator.ui.component.LargeTitle
@@ -107,19 +108,23 @@ fun AddAccountScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                categories.forEach { cat ->
+                // "All" is the home screen's filter, not something an account belongs to
+                categories.filter { it != ALL_CATEGORY }.forEach { cat ->
                     PillChip(
                         text = cat,
                         selected = state.category == cat,
-                        onClick = { viewModel.onCategoryChange(cat) },
+                        // Tapping the chosen category again leaves the account uncategorized
+                        onClick = { viewModel.onCategoryChange(if (state.category == cat) ALL_CATEGORY else cat) },
                     )
                 }
-                PillChip(
-                    text = "+ New",
-                    selected = false,
-                    onClick = viewModel::onShowAddCategoryDialog,
-                )
+                AddPillChip(text = "New", onClick = viewModel::onShowAddCategoryDialog)
             }
+            Text(
+                text = "Optional. Every account also shows under All.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+            )
 
             state.error?.let { error ->
                 Spacer(modifier = Modifier.height(16.dp))
@@ -144,14 +149,15 @@ fun AddAccountScreen(
         val focusRequester = remember { FocusRequester() }
         VaultDialog(
             title = "New Category",
+            message = "Name a category to group accounts. It's saved for next time.",
             confirmText = "Add",
-            confirmEnabled = newCategoryName.isNotBlank(),
+            confirmEnabled = newCategoryName.isNotBlank() && !newCategoryName.trim().equals(ALL_CATEGORY, ignoreCase = true),
             onConfirm = { viewModel.onAddCategory(newCategoryName) },
             onDismiss = viewModel::onDismissAddCategoryDialog,
         ) {
             VaultTextField(
                 value = newCategoryName,
-                onValueChange = { newCategoryName = it },
+                onValueChange = { newCategoryName = it.take(24) },
                 label = "Category Name",
                 onSurface = true,
                 modifier = Modifier.focusRequester(focusRequester),
