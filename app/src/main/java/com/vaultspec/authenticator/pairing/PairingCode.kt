@@ -50,7 +50,7 @@ object PairingCode {
      * middle and facing the camera. Returns the token as base64url, or null if no valid code was found.
      */
     fun decode(luma: ByteArray, width: Int, height: Int, rowStride: Int): String? =
-        decode(Gray.downsample(luma, width, height, rowStride, target = 480))
+        decode(Gray.downsample(luma, width, height, rowStride, target = 360))
 
     /** Tries the frame as it is (a light code on a dark screen) and inverted (a dark cloud on a light screen). */
     fun decode(g: Gray): String? =
