@@ -1,6 +1,5 @@
 package com.vaultspec.authenticator.cloud
 
-import android.os.Build
 import com.google.gson.Gson
 import com.vaultspec.authenticator.BuildConfig
 import com.vaultspec.authenticator.data.model.CloudBackup
@@ -65,7 +64,7 @@ class CloudApi @Inject constructor(
 
     /** Sign-in step 2: exchanges the password and the emailed code for a session. */
     fun verifyLoginCode(email: String, password: String, code: String) {
-        val body = mapOf("email" to email, "password" to password, "code" to code, "deviceName" to Build.MODEL)
+        val body = mapOf("email" to email, "password" to password, "code" to code)
         val session = gson.fromJson(call("POST", "/v1/auth/login/verify", body), CloudSession::class.java)
         prefs.cloudEmail = session.email ?: email
         prefs.cloudAccessToken = session.accessToken
@@ -122,7 +121,7 @@ class CloudApi @Inject constructor(
 
     /** The new device: claims a scanned token, signs in to the same account and returns the snapshot's JSON. */
     fun claimPairing(token: String): String {
-        val body = mapOf("token" to token, "deviceName" to Build.MODEL)
+        val body = mapOf("token" to token)
         val claim = gson.fromJson(call("POST", "/v1/pairing/claim", body), CloudPairingClaim::class.java)
         prefs.cloudEmail = claim.email
         prefs.cloudAccessToken = claim.accessToken
